@@ -79,9 +79,9 @@ src/
 
 ## Rutas disponibles
 
-metodo: GET, ruta: `/api/health`, descripción: Verifica que el servidor se encuentra activo.
-metodo: GET, ruta: `/api/events`, descripción: Devuelve la lista de eventos (actualmente vacía).
-metodo: GET, ruta: `/api/sessions`, descripción: Ruta base de sesiones (estructura inicial, sin autenticación).
+- metodo: GET, ruta: `/api/health`, descripción: Verifica que el servidor se encuentra activo.
+- metodo: GET, ruta: `/api/events`, descripción: Devuelve la lista de eventos (actualmente vacía).
+- metodo: GET, ruta: `/api/sessions`, descripción: Ruta base de sesiones (estructura inicial, sin autenticación).
 
 ## Estado del proyecto
 
