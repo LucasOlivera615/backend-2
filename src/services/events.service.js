@@ -1,7 +1,9 @@
+import eventsRepository from "../repositories/events.repository.js"
+
 const getAllEvents = () => {
-    return []
+  return eventsRepository.getAllEvents()
 }
 
 export default {
-    getAllEvents
+  getAllEvents,
 }

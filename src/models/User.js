@@ -1,8 +1,11 @@
-const User = {
+const Event = {
   id: "",
   name: "",
-  email: "",
-  password: ""
+  description: "",
+  date: "",
+  location: "",
+  maxCapacity: 0,
+  price: 0
 }
 
-export default User
+export default Event

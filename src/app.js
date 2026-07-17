@@ -2,10 +2,13 @@ import express from "express"
 import healthRouter from "./routes/health.routes.js"
 import eventsRouter from "./routes/events.routes.js"
 import sessionsRouter from "./routes/sessions.routes.js"
+import loggerMiddleware from "./middlewares/logger.middleware.js"
 
 const app = express()
 
 app.use(express.json())
+
+app.use(loggerMiddleware)
 
 app.use("/api/health", healthRouter)
 

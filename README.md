@@ -6,10 +6,11 @@ El objetivo del proyecto es construir una plataforma para la gestión de eventos
 
 ## Tecnologías
 
-- JavaScript (ES Modules)
-- Node.js
-- Express
-- pnpm
+* JavaScript (ES Modules)
+* Node.js
+* Express
+* dotenv
+* pnpm
 
 ## Instalación
 
@@ -54,35 +55,82 @@ Iniciar el servidor con:
 pnpm start
 ```
 
-Si no agregaste el script `start` al `package.json`, también podés ejecutar:
-
-```bash
-node ./src/server.js
-```
-
 ## Estructura del proyecto
 
 ```text
-src/
-├── config/
-├── controllers/
-├── dao/
-├── middlewares/
-├── models/
-├── repositories/
-├── routes/
-├── services/
-├── utils/
-├── app.js
-└── server.js
+backend-2/
+├── src/
+│   ├── config/
+│   │   └── env.js
+│   ├── controllers/
+│   │   ├── events.controller.js
+│   │   ├── health.controller.js
+│   │   └── sessions.controller.js
+│   ├── dao/
+│   │   └── events.dao.js
+│   ├── middlewares/
+│   │   └── logger.middleware.js
+│   ├── models/
+│   │   ├── Event.js
+│   │   └── User.js
+│   ├── repositories/
+│   │   └── events.repository.js
+│   ├── routes/
+│   │   ├── events.routes.js
+│   │   ├── health.routes.js
+│   │   └── sessions.routes.js
+│   ├── services/
+│   │   └── events.service.js
+│   ├── utils/
+│   ├── app.js
+│   └── server.js
+├── .env.example
+├── .gitignore
+├── package.json
+├── pnpm-lock.yaml
+└── README.md
 ```
+
+## Arquitectura
+
+La API está organizada siguiendo una arquitectura por capas:
+
+```text
+Cliente
+   │
+   ▼
+Routes
+   │
+   ▼
+Controllers
+   │
+   ▼
+Services
+   │
+   ▼
+Repositories
+   │
+   ▼
+DAO
+   │
+   ▼
+Fuente de datos
+```
+
+Cada capa posee una responsabilidad específica, facilitando el mantenimiento, la escalabilidad y la separación de responsabilidades del proyecto.
 
 ## Rutas disponibles
 
-- metodo: GET, ruta: `/api/health`, descripción: Verifica que el servidor se encuentra activo.
-- metodo: GET, ruta: `/api/events`, descripción: Devuelve la lista de eventos (actualmente vacía).
-- metodo: GET, ruta: `/api/sessions`, descripción: Ruta base de sesiones (estructura inicial, sin autenticación).
+| Método | Ruta            | Descripción                                   |
+| ------ | --------------- | --------------------------------------------- |
+| GET    | `/api/health`   | Verifica que el servidor se encuentra activo. |
+| GET    | `/api/events`   | Devuelve la lista de eventos.                 |
+| GET    | `/api/sessions` | Ruta base para sesiones (estructura inicial). |
+
+## Middleware
+
+Actualmente el proyecto incluye un middleware de ejemplo (`logger.middleware.js`) que registra en consola el método HTTP y la URL de cada petición recibida.
 
 ## Estado del proyecto
 
-Esta primera entrega implementa la estructura base de la API y la arquitectura por capas. Las próximas entregas incorporarán autenticación con JWT, manejo de usuarios, gestión de eventos, inscripciones, control de cupos y persistencia de datos.
+Esta primera entrega implementa la estructura base de la API, organizada mediante una arquitectura por capas. Se incluyen las capas de rutas, controladores, servicios, repositorios, DAO, modelos, middlewares y configuración, dejando preparada la base para incorporar en futuras entregas la persistencia con MongoDB, autenticación mediante JWT, autorización, gestión de eventos e inscripciones.
