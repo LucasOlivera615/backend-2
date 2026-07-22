@@ -1,11 +1,34 @@
-const Event = {
-  id: "",
-  name: "",
-  description: "",
-  date: "",
-  location: "",
-  maxCapacity: 0,
-  price: 0
-}
+import mongoose from "mongoose"
 
-export default Event
+const userSchema = new mongoose.Schema({
+  first_name: {
+    type: String,
+    required: true
+  },
+
+  last_name: {
+    type: String,
+    required: true
+  },
+
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  },
+
+  password: {
+    type: String,
+    required: true
+  },
+
+  role: {
+    type: String,
+    enum: ["user", "organizer", "admin"],
+    default: "user"
+  }
+})
+
+const User = mongoose.model("User", userSchema)
+
+export default User
