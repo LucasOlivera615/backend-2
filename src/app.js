@@ -3,10 +3,13 @@ import healthRouter from "./routes/health.routes.js"
 import eventsRouter from "./routes/events.routes.js"
 import sessionsRouter from "./routes/sessions.routes.js"
 import loggerMiddleware from "./middlewares/logger.middleware.js"
+import cookieParser from "cookie-parser"
 
 const app = express()
 
 app.use(express.json())
+
+app.use(cookieParser())
 
 app.use(loggerMiddleware)
 

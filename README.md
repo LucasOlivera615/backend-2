@@ -1,66 +1,44 @@
-# Plataforma de CoderEventos
+Plataforma de CoderEventos
 
-API REST desarrollada como proyecto del curso **Backend II** de Coderhouse.
+API REST desarrollada como proyecto del curso Backend II de Coderhouse.
 
-El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones, utilizando una arquitectura por capas y buenas prácticas de desarrollo. En esta segunda entrega se incorpora el primer flujo seguro de registro de usuarios utilizando MongoDB, Mongoose y bcrypt.
+El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones, utilizando una arquitectura por capas y buenas prácticas de desarrollo. En esta tercera entrega se incorpora autenticación de usuarios mediante JWT y cookies HTTP Only, manteniendo el registro seguro implementado en la entrega anterior.
 
-## Tecnologías
-
-* JavaScript (ES Modules)
-* Node.js
-* Express
-* MongoDB Atlas
-* Mongoose
-* bcrypt
-* dotenv
-* pnpm
-
-## Instalación
-
-1. Clonar el repositorio:
-
-```bash
+Tecnologías
+JavaScript (ES Modules)
+Node.js
+Express
+MongoDB Atlas
+Mongoose
+bcrypt
+JSON Web Token (JWT)
+cookie-parser
+dotenv
+pnpm
+Instalación
+Clonar el repositorio:
 git clone <URL_DEL_REPOSITORIO>
-```
-
-2. Acceder al directorio del proyecto:
-
-```bash
+Acceder al directorio del proyecto:
 cd backend-2
-```
-
-3. Instalar las dependencias:
-
-```bash
+Instalar las dependencias:
 pnpm install
-```
-
-4. Crear un archivo `.env` tomando como base el archivo `.env.example`.
-
-5. Completar las variables de entorno necesarias.
-
-## Variables de entorno
+Crear un archivo .env tomando como base el archivo .env.example.
+Completar las variables de entorno necesarias.
+Variables de entorno
 
 El proyecto utiliza las siguientes variables:
 
-```env
 PORT=8080
 NODE_ENV=development
 MONGO_URL=<your_mongodb_connection_string>
 JWT_SECRET=<your_jwt_secret>
-```
-
-## Ejecución
+JWT_EXPIRES_IN=1h
+Ejecución
 
 Iniciar el servidor con:
 
-```bash
 pnpm start
-```
-
-## Estructura del proyecto
-
-```text
+Estructura del proyecto
 backend-2/
 ├── src/
 │   ├── config/
@@ -74,6 +52,7 @@ backend-2/
 │   │   ├── events.dao.js
 │   │   └── users.dao.js
 │   ├── middlewares/
+│   │   ├── auth.middleware.js
 │   │   └── logger.middleware.js
 │   ├── models/
 │   │   ├── Event.js
@@ -89,21 +68,20 @@ backend-2/
 │   │   ├── events.service.js
 │   │   └── sessions.service.js
 │   ├── utils/
-│   │   └── hash.js
+│   │   ├── hash.js
+│   │   └── jwt.js
 │   ├── app.js
 │   └── server.js
 ├── .env.example
 ├── .gitignore
 ├── package.json
 ├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
 └── README.md
-```
-
-## Arquitectura
+Arquitectura
 
 La API está organizada siguiendo una arquitectura por capas:
 
-```text
 Cliente
    │
    ▼
@@ -123,54 +101,80 @@ DAO
    │
    ▼
 MongoDB
-```
 
 Cada capa posee una responsabilidad específica, facilitando el mantenimiento, la escalabilidad y la separación de responsabilidades del proyecto.
 
-## Registro de usuarios
+Autenticación de usuarios
 
-Se implementó el endpoint `POST /api/sessions/register`, encargado del registro seguro de usuarios.
+La aplicación permite registrar usuarios, iniciar sesión y consultar el usuario autenticado mediante JWT almacenado en una cookie HTTP Only.
 
-El endpoint espera recibir los siguientes datos:
+Registro
 
-* `first_name`
-* `last_name`
-* `email`
-* `password`
+POST /api/sessions/register
+
+El endpoint espera recibir:
+
+first_name
+last_name
+email
+password
 
 Durante el registro se realizan las siguientes validaciones:
 
-* Verificación de campos obligatorios.
-* Validación del formato del correo electrónico.
-* Validación de una longitud mínima de 8 caracteres para la contraseña.
-* Normalización del correo electrónico (`trim` y `lowercase`).
-* Verificación de que el email no se encuentre registrado previamente.
-* Hash de la contraseña utilizando **bcrypt** antes de almacenarla en la base de datos.
+Verificación de campos obligatorios.
+Validación del formato del correo electrónico.
+Longitud mínima de 8 caracteres para la contraseña.
+Normalización del correo electrónico (trim y lowercase).
+Verificación de email duplicado.
+Hash de la contraseña utilizando bcrypt.
 
-Una vez registrado el usuario, la respuesta devuelve sus datos sin incluir la contraseña.
+La respuesta devuelve los datos del usuario sin incluir la contraseña.
 
-### Prueba del endpoint
+Login
 
-El registro de usuarios puede probarse realizando una petición `POST` a:
+POST /api/sessions/login
 
-```text
-http://localhost:8080/api/sessions/register
-```
+Recibe:
 
-enviando un cuerpo en formato JSON con los campos requeridos.
+email
+password
 
-## Rutas disponibles
+Si las credenciales son válidas:
 
-| Método | Ruta                     | Descripción                                   |
-| ------ | ------------------------ | --------------------------------------------- |
-| GET    | `/api/health`            | Verifica que el servidor se encuentra activo. |
-| GET    | `/api/events`            | Devuelve la lista de eventos.                 |
-| POST   | `/api/sessions/register` | Registra un nuevo usuario de forma segura.    |
+Se compara la contraseña utilizando bcrypt.
+Se genera un JWT con la información básica del usuario.
+El token se almacena en una cookie HTTP Only llamada currentUser.
+Usuario autenticado
 
-## Middleware
+GET /api/sessions/current
 
-El proyecto incluye un middleware (`logger.middleware.js`) que registra en consola el método HTTP y la URL de cada petición recibida.
+Ruta protegida mediante un middleware de autenticación que verifica el JWT almacenado en la cookie.
 
-## Estado del proyecto
+Si el usuario está autenticado, devuelve:
 
-Esta segunda entrega incorpora el registro seguro de usuarios utilizando MongoDB Atlas, Mongoose y bcrypt, manteniendo la arquitectura por capas del proyecto. Queda preparada la base para implementar en las próximas entregas el inicio de sesión, autenticación con JWT, cookies, Passport, autorización por roles y el resto de las funcionalidades de la plataforma de eventos.
+id
+email
+role
+Logout
+
+POST /api/sessions/logout
+
+Elimina la cookie de autenticación y cierra la sesión del usuario.
+
+Rutas disponibles
+Método	Ruta	Descripción
+GET	/api/health	Verifica que el servidor se encuentra activo.
+GET	/api/events	Devuelve la lista de eventos.
+POST	/api/sessions/register	Registra un nuevo usuario.
+POST	/api/sessions/login	Inicia sesión y genera el JWT.
+GET	/api/sessions/current	Devuelve el usuario autenticado.
+POST	/api/sessions/logout	Cierra la sesión del usuario.
+Middleware
+
+Actualmente el proyecto incluye los siguientes middlewares:
+
+logger.middleware.js: registra el método HTTP y la URL de cada petición recibida.
+auth.middleware.js: protege las rutas privadas verificando el JWT almacenado en la cookie de autenticación.
+Estado del proyecto
+
+Esta tercera entrega incorpora autenticación completa mediante JWT y cookies HTTP Only, manteniendo el registro seguro implementado anteriormente. El proyecto queda preparado para incorporar Passport, autorización por roles, gestión de eventos, inscripciones y el resto de funcionalidades previstas para la plataforma.

@@ -1,5 +1,6 @@
 import usersRepository from "../repositories/users.repository.js"
-import { createHash } from "../utils/hash.js"
+import { createHash, isValidPassword } from "../utils/hash.js"
+import jwtUtils from "../utils/jwt.js"
 
 const registerUser = async (userData) => {
   const { first_name, last_name, email, password } = userData
@@ -41,6 +42,38 @@ const registerUser = async (userData) => {
   return userWithoutPassword
 }
 
+const loginUser = async (email, password) => {
+
+  if (!email || !password) {
+    const error = new Error("Credenciales inválidas")
+    error.statusCode = 401
+    throw error
+  }
+
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const user = await usersRepository.getUserByEmail(normalizedEmail)
+
+  if (!user) {
+    const error = new Error("Credenciales inválidas")
+    error.statusCode = 401
+    throw error
+  }
+
+  const validPassword = await isValidPassword(password, user.password)
+
+  if (!validPassword) {
+    const error = new Error("Credenciales inválidas")
+    error.statusCode = 401
+    throw error
+  }
+
+  const token = jwtUtils.generateToken(user)
+
+  return token
+}
+
 export default {
-  registerUser
+  registerUser,
+  loginUser
 }
