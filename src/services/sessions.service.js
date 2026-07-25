@@ -42,7 +42,8 @@ const registerUser = async (userData) => {
   return userWithoutPassword
 }
 
-const loginUser = async (email, password) => {
+
+const authenticateUser = async (email, password) => {
 
   if (!email || !password) {
     const error = new Error("Credenciales inválidas")
@@ -68,12 +69,10 @@ const loginUser = async (email, password) => {
     throw error
   }
 
-  const token = jwtUtils.generateToken(user)
-
-  return token
+  return user
 }
 
 export default {
   registerUser,
-  loginUser
+  authenticateUser
 }

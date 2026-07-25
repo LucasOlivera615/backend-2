@@ -1,55 +1,47 @@
-import sessionsService from "../services/sessions.service.js"
+import jwtUtils from "../utils/jwt.js"
 import env from "../config/env.js"
 
-const register = async (req, res) => {
-  try {
-    const user = await sessionsService.registerUser(req.body)
+const register = (req, res) => {
 
-    res.status(201).json({
-      status: "success",
-      payload: user
-    })
-
-  } catch (error) {
-    res.status(error.statusCode || 400).json({
-      status: "error",
-      message: error.message
-    })
-  }
-}
-
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body
-
-    const token = await sessionsService.loginUser(email, password)
-
-    res
-      .cookie("currentUser", token, {
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 3600000,
-        secure: env.NODE_ENV === "production"
-      })
-      .status(200)
-      .json({
-        status: "success",
-        message: "Login correcto"
-      })
-
-  } catch (error) {
-    res.status(error.statusCode || 401).json({
-      status: "error",
-      message: error.message
-    })
-  }
-}
-
-const current = (req, res) => {
-  res.status(200).json({
+  res.status(201).json({
     status: "success",
     payload: req.user
   })
+
+}
+
+const login = (req, res) => {
+
+  const token = jwtUtils.generateToken(req.user)
+
+  res
+    .cookie("currentUser", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 3600000,
+      secure: env.NODE_ENV === "production"
+    })
+    .status(200)
+    .json({
+      status: "success",
+      message: "Login correcto"
+    })
+
+}
+
+const current = (req, res) => {
+
+  const { id, email, role } = req.user
+
+  res.status(200).json({
+    status: "success",
+    payload: {
+      id,
+      email,
+      role
+    }
+  })
+
 }
 
 const logout = (req, res) => {
