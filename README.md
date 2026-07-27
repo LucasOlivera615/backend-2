@@ -2,7 +2,9 @@
 
 API REST desarrollada como proyecto del curso **Backend II** de Coderhouse.
 
-El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones, utilizando una arquitectura por capas y buenas prácticas de desarrollo. En esta cuarta entrega se refactoriza el sistema de autenticación incorporando **Passport.js**, centralizando las estrategias de registro, inicio de sesión y autenticación del usuario actual, manteniendo el uso de JWT y cookies HTTP Only.
+El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones, utilizando una arquitectura por capas y buenas prácticas de desarrollo.
+
+En esta quinta entrega se incorpora un sistema de **autorización basada en roles (RBAC)** y validación de propiedad de recursos (**Ownership**), manteniendo la autenticación centralizada mediante **Passport.js**, JWT y cookies HTTP Only.
 
 ---
 
@@ -91,7 +93,9 @@ backend-2/
 │   │   ├── events.dao.js
 │   │   └── users.dao.js
 │   ├── middlewares/
-│   │   └── logger.middleware.js
+│   │   ├── logger.middleware.js
+│   │   ├── passportCurrent.middleware.js
+│   │   └── authorize.middleware.js
 │   ├── models/
 │   │   ├── Event.js
 │   │   └── User.js
@@ -131,7 +135,7 @@ Cliente
 Routes
    │
    ▼
-Passport
+Passport / Middlewares
    │
    ▼
 Controllers
@@ -161,7 +165,9 @@ La autenticación fue centralizada mediante **Passport.js**, manteniendo JWT y c
 
 ### register
 
-Se encarga del registro de nuevos usuarios realizando:
+Gestiona el registro de usuarios mediante Passport.
+
+Realiza:
 
 * Validación de campos obligatorios.
 * Validación del formato del correo electrónico.
@@ -170,19 +176,21 @@ Se encarga del registro de nuevos usuarios realizando:
 * Hash de la contraseña utilizando **bcrypt**.
 * Asignación del rol por defecto (`user`).
 
+El registro público no permite asignar roles privilegiados (`admin` u `organizer`) desde el body.
+
 ---
 
 ### login
 
-Valida las credenciales del usuario utilizando Passport.
+Valida las credenciales utilizando Passport.
 
-Si las credenciales son correctas:
+Si son correctas:
 
 * Se autentica el usuario.
-* El controlador genera un JWT.
-* El JWT se almacena en una cookie HTTP Only llamada `currentUser`.
+* El controlador genera el JWT.
+* El token se almacena en una cookie HTTP Only llamada `currentUser`.
 
-En caso de error siempre responde con el mensaje:
+Las credenciales inválidas responden con:
 
 ```text
 Credenciales inválidas
@@ -192,15 +200,15 @@ Credenciales inválidas
 
 ### current
 
-Protege la ruta del usuario autenticado.
+Permite obtener la identidad del usuario autenticado.
 
 La estrategia:
 
-* Lee el JWT desde la cookie `currentUser`.
-* Verifica la firma y expiración del token.
-* Coloca los datos del usuario en `req.user`.
+* Extrae el JWT desde la cookie `currentUser`.
+* Verifica firma y expiración.
+* Coloca la información del usuario en `req.user`.
 
-Si el token no existe o no es válido, responde con:
+Cuando no existe una sesión válida responde con:
 
 ```json
 {
@@ -211,18 +219,58 @@ Si el token no existe o no es válido, responde con:
 
 ---
 
+# Autorización por roles (RBAC)
+
+El sistema incorpora autorización basada en roles mediante un middleware reutilizable.
+
+Los roles disponibles son:
+
+| Rol       | Descripción                         |
+| --------- | ----------------------------------- |
+| user      | Usuario estándar                    |
+| organizer | Puede gestionar sus propios eventos |
+| admin     | Tiene permisos globales             |
+
+---
+
+# Matriz de permisos
+
+| Acción                       | user | organizer | admin |
+| ---------------------------- | ---- | --------- | ----- |
+| Consultar eventos publicados | ✅    | ✅         | ✅     |
+| Crear eventos                | ❌    | ✅         | ✅     |
+| Modificar eventos propios    | ❌    | ✅         | ✅     |
+| Modificar cualquier evento   | ❌    | ❌         | ✅     |
+| Ver todos los usuarios       | ❌    | ❌         | ✅     |
+
+---
+
+# Ownership de recursos
+
+Además del control por roles, se implementa validación de propiedad sobre los eventos.
+
+Reglas:
+
+* Un `organizer` solamente puede modificar eventos donde sea propietario.
+* Un `admin` puede modificar cualquier evento.
+* Un usuario no puede modificar eventos.
+
+La validación se realiza en la capa de servicios, evitando duplicar lógica de permisos dentro de las rutas.
+
+---
+
 # Rutas disponibles
 
-| Método | Ruta                     | Descripción                                   |
-| ------ | ------------------------ | --------------------------------------------- |
-| GET    | `/api/health`            | Verifica que el servidor se encuentra activo. |
-| GET    | `/api/events`            | Devuelve la lista de eventos.                 |
-| POST   | `/api/sessions/register` | Registra un nuevo usuario.                    |
-| POST   | `/api/sessions/login`    | Autentica al usuario y genera el JWT.         |
-| GET    | `/api/sessions/current`  | Devuelve el usuario autenticado.              |
-| POST   | `/api/sessions/logout`   | Cierra la sesión del usuario.                 |
-
-Estas rutas pueden probarse utilizando herramientas como **Postman** o **Thunder Client** enviando solicitudes HTTP al servidor local (`http://localhost:8080`). Los endpoints de registro y login reciben los datos en formato JSON, mientras que las rutas protegidas utilizan la cookie HTTP Only generada automáticamente durante la autenticación.
+| Método | Ruta                     | Descripción                          |
+| ------ | ------------------------ | ------------------------------------ |
+| GET    | `/api/health`            | Verifica que el servidor está activo |
+| GET    | `/api/events`            | Consulta eventos                     |
+| POST   | `/api/events`            | Crea eventos (organizer/admin)       |
+| PUT    | `/api/events/:id`        | Modifica eventos según permisos      |
+| POST   | `/api/sessions/register` | Registra usuarios                    |
+| POST   | `/api/sessions/login`    | Autentica usuarios                   |
+| GET    | `/api/sessions/current`  | Obtiene usuario autenticado          |
+| POST   | `/api/sessions/logout`   | Cierra sesión                        |
 
 ---
 
@@ -230,17 +278,93 @@ Estas rutas pueden probarse utilizando herramientas como **Postman** o **Thunder
 
 Actualmente el proyecto utiliza:
 
-* **logger.middleware.js**: registra el método HTTP y la URL de cada petición recibida.
-* **Passport.js**: centraliza la autenticación mediante las estrategias `register`, `login` y `current`.
+### passportCurrent.middleware.js
+
+Responsable de autenticación.
+
+Funciones:
+
+* Validar el JWT almacenado en cookie.
+* Recuperar el usuario autenticado.
+* Cargar información en `req.user`.
+* Responder `401 Unauthorized` cuando no existe una sesión válida.
+
+---
+
+### authorize.middleware.js
+
+Responsable de autorización.
+
+Funciones:
+
+* Recibir roles permitidos.
+* Comparar el rol del usuario autenticado.
+* Permitir o rechazar acciones.
+
+Responde:
+
+```text
+403 Forbidden
+```
+
+cuando el usuario está autenticado pero no posee permisos suficientes.
+
+---
+
+### logger.middleware.js
+
+Registra el método HTTP y la URL de cada petición recibida.
+
+---
+
+# Diferencia entre 401 y 403
+
+## 401 Unauthorized
+
+Se utiliza cuando el usuario no está autenticado.
+
+Ejemplos:
+
+* No existe cookie `currentUser`.
+* JWT inválido.
+* JWT expirado.
+
+---
+
+## 403 Forbidden
+
+Se utiliza cuando el usuario está autenticado pero no tiene permisos.
+
+Ejemplos:
+
+* Usuario `user` intentando crear eventos.
+* Organizer intentando modificar un evento ajeno.
 
 ---
 
 # Preparado para futuras estrategias
 
-La configuración de Passport fue centralizada en `src/config/passport.config.js`, permitiendo incorporar nuevas estrategias de autenticación (como Google, GitHub u otros proveedores OAuth) sin modificar `app.js` ni la estructura principal de la aplicación.
+La configuración de Passport fue centralizada en:
+
+```text
+src/config/passport.config.js
+```
+
+Esto permite agregar nuevas estrategias de autenticación (Google, GitHub u otros proveedores OAuth) sin modificar `app.js` ni la estructura principal de la aplicación.
 
 ---
 
 # Estado del proyecto
 
-Esta cuarta entrega incorpora Passport.js como capa de autenticación, centralizando las estrategias de registro, inicio de sesión y usuario autenticado. La aplicación mantiene el uso de JWT y cookies HTTP Only y queda preparada para incorporar autorización por roles, autenticación con proveedores externos (como Google o GitHub), gestión de eventos, inscripciones y el resto de funcionalidades previstas para la plataforma.
+Esta quinta entrega incorpora un sistema completo de autenticación y autorización profesional.
+
+La aplicación cuenta con:
+
+* Autenticación mediante Passport.js.
+* JWT almacenado en cookies HTTP Only.
+* Estrategias centralizadas de registro, login y usuario actual.
+* Control de acceso basado en roles.
+* Validación de propiedad de recursos.
+* Protección de rutas sensibles.
+
+El proyecto queda preparado para continuar con funcionalidades como gestión avanzada de eventos, inscripciones, persistencia completa de recursos y nuevas estrategias de autenticación externas.

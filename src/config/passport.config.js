@@ -24,6 +24,7 @@ const initializePassport = () => {
                 passReqToCallback: true
             },
             async (req, email, password, done) => {
+
                 try {
 
                     const user = await sessionsService.registerUser({
@@ -41,7 +42,6 @@ const initializePassport = () => {
                         message: error.message,
                         statusCode: error.statusCode || 400
                     })
-
                 }
             }
         )

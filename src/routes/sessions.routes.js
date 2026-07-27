@@ -6,7 +6,26 @@ const router = Router()
 
 router.post(
     "/register",
-    passport.authenticate("register", { session: false }),
+    (req, res, next) => {
+        passport.authenticate("register", { session: false }, (err, user, info) => {
+
+            if (err) {
+                return next(err)
+            }
+
+            if (!user) {
+                return res.status(info.statusCode || 400).json({
+                    status: "error",
+                    message: info.message
+                })
+            }
+
+            req.user = user
+
+            next()
+
+        })(req, res, next)
+    },
     sessionsController.register
 )
 
