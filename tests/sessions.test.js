@@ -3,17 +3,19 @@ import app from "../src/app.js"
 import mongoose from "mongoose"
 import connectDB from "../src/config/db.js"
 
+
 beforeAll(async () => {
-
     await connectDB()
-
 })
+
 
 afterAll(async () => {
     await mongoose.connection.close()
 })
 
+
 describe("Sessions authentication", () => {
+
 
     const testUser = {
         first_name: "Test",
@@ -23,6 +25,9 @@ describe("Sessions authentication", () => {
     }
 
 
+    let authCookie
+
+
     test("Debe registrar un usuario correctamente", async () => {
 
         const response = await request(app)
@@ -30,23 +35,29 @@ describe("Sessions authentication", () => {
             .send(testUser)
 
 
-        expect(response.statusCode).toBe(201)
+        expect(response.statusCode)
+            .toBe(201)
+
 
         expect(response.body.status)
             .toBe("success")
 
 
         expect(response.body.payload)
-            .toHaveProperty("email", testUser.email)
+            .toHaveProperty(
+                "email",
+                testUser.email
+            )
 
 
         expect(response.body.payload)
-            .not.toHaveProperty("password")
+            .not
+            .toHaveProperty("password")
 
     })
 
 
-    test("No debe permitir registrar un email duplicado", async () => {
+    test("No debe permitir registrar email duplicado", async () => {
 
         const response = await request(app)
             .post("/api/sessions/register")
@@ -84,6 +95,9 @@ describe("Sessions authentication", () => {
         expect(response.headers["set-cookie"])
             .toBeDefined()
 
+
+        authCookie = response.headers["set-cookie"]
+
     })
 
 
@@ -103,6 +117,57 @@ describe("Sessions authentication", () => {
 
         expect(response.body.message)
             .toBe("Credenciales inválidas")
+
+    })
+
+
+    test("Debe obtener usuario autenticado con current", async () => {
+
+        const response = await request(app)
+            .get("/api/sessions/current")
+            .set(
+                "Cookie",
+                authCookie
+            )
+
+
+        expect(response.statusCode)
+            .toBe(200)
+
+
+        expect(response.body.status)
+            .toBe("success")
+
+
+        expect(response.body.payload)
+            .toHaveProperty(
+                "email",
+                testUser.email
+            )
+
+    })
+
+
+    test("Debe cerrar sesión correctamente", async () => {
+
+        const response = await request(app)
+            .post("/api/sessions/logout")
+            .set(
+                "Cookie",
+                authCookie
+            )
+
+
+        expect(response.statusCode)
+            .toBe(200)
+
+
+        expect(response.body.status)
+            .toBe("success")
+
+
+        expect(response.headers["set-cookie"])
+            .toBeDefined()
 
     })
 

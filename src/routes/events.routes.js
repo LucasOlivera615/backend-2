@@ -5,8 +5,21 @@ import authorize from "../middlewares/authorize.middleware.js"
 
 const router = Router()
 
-router.get("/", eventsController.getAllEvents)
 
+// Público
+router.get(
+    "/",
+    eventsController.getAllEvents
+)
+
+
+router.get(
+    "/:id",
+    eventsController.getEventById
+)
+
+
+// Organizer / Admin
 router.post(
     "/",
     passportCurrent,
@@ -14,12 +27,6 @@ router.post(
     eventsController.createEvent
 )
 
-router.get(
-    "/admin",
-    passportCurrent,
-    authorize("admin"),
-    eventsController.getAdminData
-)
 
 router.put(
     "/:id",
@@ -27,5 +34,14 @@ router.put(
     authorize("organizer", "admin"),
     eventsController.updateEvent
 )
+
+
+router.patch(
+    "/:id/status",
+    passportCurrent,
+    authorize("organizer", "admin"),
+    eventsController.updateStatus
+)
+
 
 export default router

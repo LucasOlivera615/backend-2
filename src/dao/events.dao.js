@@ -1,44 +1,68 @@
-import crypto from "crypto"
+import Event from "../models/Event.js"
 
-const events = []
+const createEvent = async (eventData) => {
 
-const getAllEvents = () => {
-  return events
+  return await Event.create(eventData)
+
 }
 
-const createEvent = (eventData) => {
-  const newEvent = {
-    id: crypto.randomUUID(),
-    ...eventData
+const getAllEvents = async (filters = {}, options = {}) => {
+
+  const page = options.page || 1
+  const limit = options.limit || 10
+  const skip = (page - 1) * limit
+
+  let sort = {}
+
+  if (options.sort === "date") {
+    sort.date = 1
   }
 
-  events.push(newEvent)
+  if (options.sort === "-date") {
+    sort.date = -1
+  }
 
-  return newEvent
+  const data = await Event.find(filters)
+    .populate("organizer", "first_name last_name email role")
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
+
+  const total = await Event.countDocuments(filters)
+
+  return {
+    data,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit)
+  }
+
 }
 
-const getEventById = (id) => {
-  return events.find(event => event.id === id)
+const getEventById = async (id) => {
+
+  return await Event.findById(id)
+    .populate("organizer", "first_name last_name email role")
+
 }
 
-const updateEvent = (id, data) => {
-  const eventIndex = events.findIndex(event => event.id === id)
+const updateEvent = async (id, updateData) => {
 
-  if (eventIndex === -1) {
-    return null
-  }
+  return await Event.findByIdAndUpdate(
+    id,
+    updateData,
+    {
+      new: true,
+      runValidators: true
+    }
+  )
 
-  events[eventIndex] = {
-    ...events[eventIndex],
-    ...data
-  }
-
-  return events[eventIndex]
 }
 
 export default {
-  getAllEvents,
   createEvent,
+  getAllEvents,
   getEventById,
   updateEvent
 }

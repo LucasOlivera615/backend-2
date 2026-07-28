@@ -1,52 +1,19 @@
 import eventsService from "../services/events.service.js"
 
-const getAllEvents = (req, res) => {
-    const events = eventsService.getAllEvents()
 
-    res.status(200).json({
-        status: "success",
-        payload: events
-    })
-}
 
-const createEvent = (req, res) => {
-    try {
-        const event = eventsService.createEvent({
-            ...req.body,
-            organizer: req.user.id
-        })
+const createEvent = async (req, res) => {
 
-        res.status(201).json({
-            status: "success",
-            payload: event
-        })
-
-    } catch (error) {
-        res.status(error.statusCode || 400).json({
-            status: "error",
-            message: error.message
-        })
-    }
-}
-
-const getAdminData = (req, res) => {
-    res.status(200).json({
-        status: "success",
-        message: "Bienvenido administrador",
-        user: req.user
-    })
-}
-
-const updateEvent = (req, res) => {
     try {
 
-        const event = eventsService.updateEvent(
-            req.params.id,
-            req.body,
-            req.user
-        )
+        const event =
+            await eventsService.createEvent(
+                req.body,
+                req.user.id
+            )
 
-        res.status(200).json({
+
+        return res.status(201).json({
             status: "success",
             payload: event
         })
@@ -54,17 +21,173 @@ const updateEvent = (req, res) => {
 
     } catch (error) {
 
-        res.status(error.statusCode || 400).json({
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
             status: "error",
             message: error.message
+
         })
 
     }
+
 }
+
+
+
+const getAllEvents = async (req, res) => {
+
+    try {
+
+        const result =
+            await eventsService.getAllEvents(
+                req.query
+            )
+
+
+        return res.status(200).json({
+
+            status: "success",
+            data: result.data,
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            totalPages: result.totalPages
+
+        })
+
+
+    } catch (error) {
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
+            status: "error",
+            message: error.message
+
+        })
+
+    }
+
+}
+
+
+
+const getEventById = async (req, res) => {
+
+    try {
+
+        const event =
+            await eventsService.getEventById(
+                req.params.id
+            )
+
+
+        return res.status(200).json({
+
+            status: "success",
+            payload: event
+
+        })
+
+
+    } catch (error) {
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
+            status: "error",
+            message: error.message
+
+        })
+
+    }
+
+}
+
+
+
+const updateEvent = async (req, res) => {
+
+    try {
+
+        const event =
+            await eventsService.updateEvent(
+                req.params.id,
+                req.body,
+                req.user
+            )
+
+
+        return res.status(200).json({
+
+            status: "success",
+            payload: event
+
+        })
+
+
+    } catch (error) {
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
+            status: "error",
+            message: error.message
+
+        })
+
+    }
+
+}
+
+
+
+const updateStatus = async (req, res) => {
+
+    try {
+
+        const event =
+            await eventsService.updateStatus(
+                req.params.id,
+                req.body.status,
+                req.user
+            )
+
+
+        return res.status(200).json({
+
+            status: "success",
+            payload: event
+
+        })
+
+
+    } catch (error) {
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
+            status: "error",
+            message: error.message
+
+        })
+
+    }
+
+}
+
+
 
 export default {
-    getAllEvents,
     createEvent,
-    getAdminData,
-    updateEvent
+    getAllEvents,
+    getEventById,
+    updateEvent,
+    updateStatus
 }

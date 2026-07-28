@@ -1,10 +1,12 @@
 # Plataforma de CoderEventos
 
-API REST desarrollada como proyecto del curso **Backend II** de Coderhouse.
+API REST desarrollada como proyecto del curso **Backend II de Coderhouse**.
 
-El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones, utilizando una arquitectura por capas y buenas prácticas de desarrollo.
+El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones utilizando una arquitectura por capas, aplicando buenas prácticas de diseño backend, separación de responsabilidades y reglas de negocio dentro de la capa de servicios.
 
-En esta quinta entrega se incorpora un sistema de **autorización basada en roles (RBAC)** y validación de propiedad de recursos (**Ownership**), manteniendo la autenticación centralizada mediante **Passport.js**, JWT y cookies HTTP Only.
+En esta sexta entrega se incorpora la **entidad Event completa**, incluyendo CRUD de eventos, validaciones de negocio, control de permisos por rol (RBAC), validación de ownership, filtros avanzados, paginación, ordenamiento y pruebas automatizadas de integración.
+
+La autenticación continúa centralizada mediante **Passport.js**, JWT y cookies HTTP Only.
 
 ---
 
@@ -22,6 +24,8 @@ En esta quinta entrega se incorpora un sistema de **autorización basada en role
 * JSON Web Token (JWT)
 * cookie-parser
 * dotenv
+* Jest
+* Supertest
 * pnpm
 
 ---
@@ -34,27 +38,25 @@ En esta quinta entrega se incorpora un sistema de **autorización basada en role
 git clone <URL_DEL_REPOSITORIO>
 ```
 
-2. Acceder al directorio del proyecto:
+2. Acceder al directorio:
 
 ```bash
 cd backend-2
 ```
 
-3. Instalar las dependencias:
+3. Instalar dependencias:
 
 ```bash
 pnpm install
 ```
 
-4. Crear un archivo `.env` tomando como base el archivo `.env.example`.
+4. Crear un archivo `.env` tomando como referencia `.env.example`.
 
-5. Completar las variables de entorno necesarias.
+5. Completar las variables de entorno.
 
 ---
 
 # Variables de entorno
-
-El proyecto utiliza las siguientes variables:
 
 ```env
 PORT=8080
@@ -68,7 +70,7 @@ JWT_EXPIRES_IN=1h
 
 # Ejecución
 
-Iniciar el servidor con:
+Iniciar servidor:
 
 ```bash
 pnpm start
@@ -76,10 +78,52 @@ pnpm start
 
 ---
 
+# Testing
+
+El proyecto utiliza **Jest** y **Supertest** para pruebas automatizadas de integración.
+
+Ejecutar:
+
+```bash
+pnpm test
+```
+
+Actualmente se validan:
+
+## Usuarios y autenticación
+
+* Registro exitoso.
+* Registro con email duplicado.
+* Login correcto.
+* Login con credenciales inválidas.
+* Obtención del usuario autenticado.
+* Logout.
+
+## Eventos
+
+* Creación de eventos.
+* Validación de roles al crear eventos.
+* Rechazo de fechas pasadas.
+* Validación de capacidad.
+* Listado con filtros.
+* Consulta por ID.
+* Modificación del evento propio.
+* Bloqueo de modificación de eventos ajenos.
+* Permisos administrativos.
+* Cambio de estado.
+* Cancelación lógica.
+* Validaciones de estados inválidos.
+
+---
+
 # Estructura del proyecto
 
 ```text
 backend-2/
+├── tests/
+│   ├── sessions.test.js
+│   ├── events.test.js
+│   └── event.model.test.js
 ├── src/
 │   ├── config/
 │   │   ├── db.js
@@ -110,6 +154,7 @@ backend-2/
 │   │   ├── events.service.js
 │   │   └── sessions.service.js
 │   ├── utils/
+        ├── AppError.js
 │   │   ├── hash.js
 │   │   └── jwt.js
 │   ├── app.js
@@ -126,7 +171,7 @@ backend-2/
 
 # Arquitectura
 
-La API está organizada siguiendo una arquitectura por capas:
+La API sigue una arquitectura por capas:
 
 ```text
 Cliente
@@ -153,167 +198,205 @@ DAO
 MongoDB
 ```
 
-Cada capa posee una responsabilidad específica, facilitando el mantenimiento, la escalabilidad y la separación de responsabilidades del proyecto.
+Responsabilidades:
+
+* **Routes:** definición de endpoints.
+* **Middlewares:** autenticación y autorización.
+* **Controllers:** manejo HTTP request/response.
+* **Services:** reglas de negocio.
+* **Repositories:** abstracción del acceso a datos.
+* **DAO:** comunicación directa con MongoDB.
 
 ---
 
-# Autenticación
+# Entidad Event
 
-La autenticación fue centralizada mediante **Passport.js**, manteniendo JWT y cookies HTTP Only para la identificación del usuario.
+La entidad Event representa el núcleo de la plataforma.
 
-## Estrategias implementadas
+Campos principales:
 
-### register
+| Campo       | Descripción                   |
+| ----------- | ----------------------------- |
+| title       | Nombre del evento             |
+| description | Descripción                   |
+| category    | Categoría                     |
+| date        | Fecha del evento              |
+| location    | Ubicación                     |
+| capacity    | Cantidad máxima de asistentes |
+| price       | Precio                        |
+| status      | Estado actual                 |
+| organizer   | Referencia al usuario creador |
 
-Gestiona el registro de usuarios mediante Passport.
+El campo `organizer` utiliza una referencia mediante `ObjectId` hacia User.
 
-Realiza:
-
-* Validación de campos obligatorios.
-* Validación del formato del correo electrónico.
-* Normalización del email (`trim` y `lowercase`).
-* Verificación de email duplicado.
-* Hash de la contraseña utilizando **bcrypt**.
-* Asignación del rol por defecto (`user`).
-
-El registro público no permite asignar roles privilegiados (`admin` u `organizer`) desde el body.
+No se almacena el usuario completo dentro del evento.
 
 ---
 
-### login
+# Estados del evento
 
-Valida las credenciales utilizando Passport.
-
-Si son correctas:
-
-* Se autentica el usuario.
-* El controlador genera el JWT.
-* El token se almacena en una cookie HTTP Only llamada `currentUser`.
-
-Las credenciales inválidas responden con:
+Los estados permitidos son:
 
 ```text
-Credenciales inválidas
+draft
+published
+cancelled
+finished
 ```
+
+Reglas:
+
+* Todo evento nace como `draft`.
+* Un evento cancelado no puede modificarse.
+* La cancelación es lógica: cambia el estado a `cancelled`.
+* No se eliminan registros físicamente.
 
 ---
 
-### current
+# Reglas de negocio de eventos
 
-Permite obtener la identidad del usuario autenticado.
+Las validaciones se encuentran en la capa `services`.
 
-La estrategia:
+Se controla:
 
-* Extrae el JWT desde la cookie `currentUser`.
-* Verifica firma y expiración.
-* Coloca la información del usuario en `req.user`.
-
-Cuando no existe una sesión válida responde con:
-
-```json
-{
-  "status": "error",
-  "message": "No autenticado"
-}
-```
+* Campos obligatorios.
+* Fecha válida.
+* Capacidad mayor a cero.
+* Precio mayor o igual a cero.
+* Estados permitidos.
+* Ownership del evento.
+* Restricción de modificaciones sobre eventos cancelados.
+* Restricción de publicación de eventos finalizados.
+* Restricción de publicación de eventos con fecha pasada.
 
 ---
 
 # Autorización por roles (RBAC)
 
-El sistema incorpora autorización basada en roles mediante un middleware reutilizable.
-
-Los roles disponibles son:
+Roles disponibles:
 
 | Rol       | Descripción                         |
 | --------- | ----------------------------------- |
 | user      | Usuario estándar                    |
-| organizer | Puede gestionar sus propios eventos |
-| admin     | Tiene permisos globales             |
+| organizer | Puede crear y gestionar sus eventos |
+| admin     | Acceso administrativo completo      |
 
 ---
 
 # Matriz de permisos
 
-| Acción                       | user | organizer | admin |
-| ---------------------------- | ---- | --------- | ----- |
-| Consultar eventos publicados | ✅    | ✅         | ✅     |
-| Crear eventos                | ❌    | ✅         | ✅     |
-| Modificar eventos propios    | ❌    | ✅         | ✅     |
-| Modificar cualquier evento   | ❌    | ❌         | ✅     |
-| Ver todos los usuarios       | ❌    | ❌         | ✅     |
+| Acción                   | user | organizer | admin |
+| ------------------------ | ---- | --------- | ----- |
+| Consultar eventos        | ✅    | ✅         | ✅     |
+| Crear eventos            | ❌    | ✅         | ✅     |
+| Modificar evento propio  | ❌    | ✅         | ✅     |
+| Modificar evento ajeno   | ❌    | ❌         | ✅     |
+| Cambiar estado de evento | ❌    | ✅         | ✅     |
 
 ---
 
 # Ownership de recursos
 
-Además del control por roles, se implementa validación de propiedad sobre los eventos.
+La plataforma implementa control de propiedad sobre eventos.
 
 Reglas:
 
-* Un `organizer` solamente puede modificar eventos donde sea propietario.
-* Un `admin` puede modificar cualquier evento.
-* Un usuario no puede modificar eventos.
+* Un organizer solo puede modificar sus propios eventos.
+* Un admin puede modificar cualquier evento.
+* Un usuario estándar no puede gestionar eventos.
 
-La validación se realiza en la capa de servicios, evitando duplicar lógica de permisos dentro de las rutas.
+La validación se realiza en la capa de servicios.
 
 ---
 
 # Rutas disponibles
 
-| Método | Ruta                     | Descripción                          |
-| ------ | ------------------------ | ------------------------------------ |
-| GET    | `/api/health`            | Verifica que el servidor está activo |
-| GET    | `/api/events`            | Consulta eventos                     |
-| POST   | `/api/events`            | Crea eventos (organizer/admin)       |
-| PUT    | `/api/events/:id`        | Modifica eventos según permisos      |
-| POST   | `/api/sessions/register` | Registra usuarios                    |
-| POST   | `/api/sessions/login`    | Autentica usuarios                   |
-| GET    | `/api/sessions/current`  | Obtiene usuario autenticado          |
-| POST   | `/api/sessions/logout`   | Cierra sesión                        |
+| Método | Ruta                     | Descripción               |
+| ------ | ------------------------ | ------------------------- |
+| GET    | `/api/health`            | Estado del servidor       |
+| GET    | `/api/events`            | Listar eventos            |
+| GET    | `/api/events/:id`        | Obtener evento específico |
+| POST   | `/api/events`            | Crear evento              |
+| PUT    | `/api/events/:id`        | Modificar evento          |
+| PATCH  | `/api/events/:id/status` | Cambiar estado            |
+| POST   | `/api/sessions/register` | Registrar usuario         |
+| POST   | `/api/sessions/login`    | Login                     |
+| GET    | `/api/sessions/current`  | Usuario autenticado       |
+| POST   | `/api/sessions/logout`   | Cerrar sesión             |
+
+---
+
+# Listado de eventos
+
+El endpoint:
+
+```http
+GET /api/events
+```
+
+permite filtros avanzados.
+
+Filtros disponibles:
+
+```text
+status
+category
+location
+dateFrom
+dateTo
+```
+
+Ejemplo:
+
+```http
+/api/events?status=published&category=workshop&page=2&limit=5
+```
+
+Incluye:
+
+```json
+{
+  "data": [],
+  "page": 2,
+  "limit": 5,
+  "total": 20,
+  "totalPages": 4
+}
+```
+
+También permite ordenamiento:
+
+```http
+/api/events?sort=date
+```
 
 ---
 
 # Middlewares
 
-Actualmente el proyecto utiliza:
+## passportCurrent.middleware.js
 
-### passportCurrent.middleware.js
+Responsable de autenticación:
 
-Responsable de autenticación.
-
-Funciones:
-
-* Validar el JWT almacenado en cookie.
-* Recuperar el usuario autenticado.
-* Cargar información en `req.user`.
-* Responder `401 Unauthorized` cuando no existe una sesión válida.
+* Valida JWT.
+* Recupera usuario desde cookie HTTP Only.
+* Carga información en `req.user`.
 
 ---
 
-### authorize.middleware.js
+## authorize.middleware.js
 
-Responsable de autorización.
+Responsable de autorización:
 
-Funciones:
+* Recibe roles permitidos.
+* Compara con el rol del usuario.
+* Permite o bloquea acciones.
 
-* Recibir roles permitidos.
-* Comparar el rol del usuario autenticado.
-* Permitir o rechazar acciones.
-
-Responde:
+Cuando el usuario está autenticado pero no posee permisos devuelve:
 
 ```text
 403 Forbidden
 ```
-
-cuando el usuario está autenticado pero no posee permisos suficientes.
-
----
-
-### logger.middleware.js
-
-Registra el método HTTP y la URL de cada petición recibida.
 
 ---
 
@@ -321,50 +404,68 @@ Registra el método HTTP y la URL de cada petición recibida.
 
 ## 401 Unauthorized
 
-Se utiliza cuando el usuario no está autenticado.
+Usuario no autenticado.
 
 Ejemplos:
 
-* No existe cookie `currentUser`.
+* JWT inexistente.
 * JWT inválido.
-* JWT expirado.
+* Sesión expirada.
 
 ---
 
 ## 403 Forbidden
 
-Se utiliza cuando el usuario está autenticado pero no tiene permisos.
+Usuario autenticado pero sin permisos.
 
 Ejemplos:
 
-* Usuario `user` intentando crear eventos.
-* Organizer intentando modificar un evento ajeno.
+* Usuario intentando crear eventos.
+* Organizer modificando evento ajeno.
 
 ---
 
-# Preparado para futuras estrategias
+# Pruebas automatizadas
 
-La configuración de Passport fue centralizada en:
+Las pruebas utilizan:
 
-```text
-src/config/passport.config.js
-```
+* Jest.
+* Supertest.
 
-Esto permite agregar nuevas estrategias de autenticación (Google, GitHub u otros proveedores OAuth) sin modificar `app.js` ni la estructura principal de la aplicación.
+Se validan:
+
+* Respuestas HTTP.
+* Códigos de estado.
+* Cookies.
+* Permisos.
+* Validaciones de negocio.
+* Flujos completos de eventos.
 
 ---
 
 # Estado del proyecto
 
-Esta quinta entrega incorpora un sistema completo de autenticación y autorización profesional.
+Actualmente la aplicación cuenta con:
 
-La aplicación cuenta con:
-
+* Arquitectura backend por capas.
 * Autenticación mediante Passport.js.
-* JWT almacenado en cookies HTTP Only.
-* Estrategias centralizadas de registro, login y usuario actual.
-* Control de acceso basado en roles.
-* Validación de propiedad de recursos.
-* Protección de rutas sensibles.
+* JWT mediante cookies HTTP Only.
+* Registro, login y sesión actual.
+* Sistema RBAC.
+* Ownership de recursos.
+* Entidad Event completa.
+* CRUD de eventos.
+* Validaciones de negocio.
+* Filtros y paginación.
+* Ordenamiento.
+* Cancelación lógica.
+* Tests automatizados con Jest y Supertest.
 
-El proyecto queda preparado para continuar con funcionalidades como gestión avanzada de eventos, inscripciones, persistencia completa de recursos y nuevas estrategias de autenticación externas.
+El proyecto queda preparado para continuar con:
+
+* Sistema de inscripciones.
+* Gestión de cupos.
+* Tickets.
+* Notificaciones.
+* Eventos de dominio.
+* Nuevas estrategias OAuth.
