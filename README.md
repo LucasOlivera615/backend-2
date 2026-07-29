@@ -2,9 +2,9 @@
 
 API REST desarrollada como proyecto del curso **Backend II de Coderhouse**.
 
-El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones utilizando una arquitectura por capas, aplicando buenas prácticas de diseño backend, separación de responsabilidades y reglas de negocio dentro de la capa de servicios.
+El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones aplicando una arquitectura por capas, separación de responsabilidades y reglas de negocio centralizadas en la capa de servicios.
 
-En esta sexta entrega se incorpora la **entidad Event completa**, incluyendo CRUD de eventos, validaciones de negocio, control de permisos por rol (RBAC), validación de ownership, filtros avanzados, paginación, ordenamiento y pruebas automatizadas de integración.
+En esta séptima entrega se incorpora el **sistema completo de inscripciones mediante la entidad Ticket**, permitiendo gestionar asistentes, controlar cupos disponibles, cancelar inscripciones y validar reglas de negocio complejas. Además, se amplía la cobertura mediante pruebas automatizadas de integración y pruebas unitarias sobre los modelos principales.
 
 La autenticación continúa centralizada mediante **Passport.js**, JWT y cookies HTTP Only.
 
@@ -12,21 +12,22 @@ La autenticación continúa centralizada mediante **Passport.js**, JWT y cookies
 
 # Tecnologías
 
-* JavaScript (ES Modules)
-* Node.js
-* Express
-* MongoDB Atlas
-* Mongoose
-* Passport.js
-* passport-local
-* passport-jwt
-* bcrypt
-* JSON Web Token (JWT)
-* cookie-parser
-* dotenv
-* Jest
-* Supertest
-* pnpm
+- JavaScript (ES Modules)
+- Node.js
+- Express
+- MongoDB Atlas
+- Mongoose
+- Passport.js
+- passport-local
+- passport-jwt
+- bcrypt
+- JSON Web Token (JWT)
+- cookie-parser
+- dotenv
+- Jest
+- Supertest
+- pnpm
+- Nodemailer
 
 ---
 
@@ -50,7 +51,7 @@ cd backend-2
 pnpm install
 ```
 
-4. Crear un archivo `.env` tomando como referencia `.env.example`.
+4. Crear un archivo `.env` utilizando como referencia `.env.example`.
 
 5. Completar las variables de entorno.
 
@@ -61,16 +62,23 @@ pnpm install
 ```env
 PORT=8080
 NODE_ENV=development
+
 MONGO_URL=<your_mongodb_connection_string>
+
 JWT_SECRET=<your_jwt_secret>
 JWT_EXPIRES_IN=1h
+
+MAIL_HOST=<smtp_host>
+MAIL_PORT=<smtp_port>
+MAIL_USER=<smtp_user>
+MAIL_PASS=<smtp_password>
 ```
 
 ---
 
 # Ejecución
 
-Iniciar servidor:
+Iniciar el servidor:
 
 ```bash
 pnpm start
@@ -80,7 +88,7 @@ pnpm start
 
 # Testing
 
-El proyecto utiliza **Jest** y **Supertest** para pruebas automatizadas de integración.
+El proyecto utiliza **Jest** y **Supertest** para pruebas automatizadas.
 
 Ejecutar:
 
@@ -88,31 +96,44 @@ Ejecutar:
 pnpm test
 ```
 
-Actualmente se validan:
+Actualmente el proyecto cuenta con 40 pruebas automatizadas entre pruebas de integración (API REST) y pruebas unitarias de modelos, desarrolladas con Jest y Supertest., cubriendo:
 
 ## Usuarios y autenticación
 
-* Registro exitoso.
-* Registro con email duplicado.
-* Login correcto.
-* Login con credenciales inválidas.
-* Obtención del usuario autenticado.
-* Logout.
+- Registro de usuarios.
+- Registro con email duplicado.
+- Inicio de sesión.
+- Credenciales inválidas.
+- Usuario autenticado.
+- Logout.
 
 ## Eventos
 
-* Creación de eventos.
-* Validación de roles al crear eventos.
-* Rechazo de fechas pasadas.
-* Validación de capacidad.
-* Listado con filtros.
-* Consulta por ID.
-* Modificación del evento propio.
-* Bloqueo de modificación de eventos ajenos.
-* Permisos administrativos.
-* Cambio de estado.
-* Cancelación lógica.
-* Validaciones de estados inválidos.
+- Creación de eventos.
+- Validaciones de negocio.
+- Validación de ownership.
+- Control RBAC.
+- Consulta individual.
+- Listado con filtros.
+- Paginación.
+- Cambio de estado.
+- Cancelación lógica.
+
+## Tickets
+
+- Inscripción a eventos publicados.
+- Validación de cupos disponibles.
+- Prevención de inscripciones duplicadas.
+- Consulta de tickets propios.
+- Consulta de asistentes por evento.
+- Cancelación de tickets.
+- Liberación automática de cupos.
+- Permisos administrativos.
+
+## Modelos
+
+- Validaciones del modelo Event.
+- Validaciones del modelo Ticket.
 
 ---
 
@@ -120,47 +141,69 @@ Actualmente se validan:
 
 ```text
 backend-2/
-├── tests/
-│   ├── sessions.test.js
-│   ├── events.test.js
-│   └── event.model.test.js
 ├── src/
 │   ├── config/
 │   │   ├── db.js
 │   │   ├── env.js
 │   │   └── passport.config.js
+│   │
 │   ├── controllers/
 │   │   ├── events.controller.js
 │   │   ├── health.controller.js
-│   │   └── sessions.controller.js
+│   │   ├── sessions.controller.js
+│   │   └── tickets.controller.js
+│   │
 │   ├── dao/
 │   │   ├── events.dao.js
+│   │   ├── tickets.dao.js
 │   │   └── users.dao.js
+│   │
 │   ├── middlewares/
+│   │   ├── authorize.middleware.js
 │   │   ├── logger.middleware.js
-│   │   ├── passportCurrent.middleware.js
-│   │   └── authorize.middleware.js
+│   │   └── passportCurrent.middleware.js
+│   │
 │   ├── models/
 │   │   ├── Event.js
+│   │   ├── Ticket.js
 │   │   └── User.js
+│   │
 │   ├── repositories/
 │   │   ├── events.repository.js
+│   │   ├── sessions.repository.js
+│   │   ├── tickets.repository.js
 │   │   └── users.repository.js
+│   │
 │   ├── routes/
 │   │   ├── events.routes.js
 │   │   ├── health.routes.js
-│   │   └── sessions.routes.js
+│   │   ├── sessions.routes.js
+│   │   └── tickets.routes.js
+│   │
 │   ├── services/
 │   │   ├── events.service.js
-│   │   └── sessions.service.js
+│   │   ├── mail.service.js
+│   │   ├── sessions.service.js
+│   │   └── tickets.service.js
+│   │
 │   ├── utils/
-        ├── AppError.js
+│   │   ├── AppError.js
 │   │   ├── hash.js
 │   │   └── jwt.js
+│   │
 │   ├── app.js
 │   └── server.js
+│
+├── tests/
+│   ├── event.model.test.js
+│   ├── events.test.js
+│   ├── sessions.test.js
+│   ├── ticket.model.test.js
+│   └── tickets.test.js
+│
 ├── .env.example
 ├── .gitignore
+├── jest.config.js
 ├── package.json
 ├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
@@ -171,7 +214,7 @@ backend-2/
 
 # Arquitectura
 
-La API sigue una arquitectura por capas:
+La aplicación sigue una arquitectura por capas.
 
 ```text
 Cliente
@@ -198,44 +241,52 @@ DAO
 MongoDB
 ```
 
-Responsabilidades:
+Cada capa posee una responsabilidad específica:
 
-* **Routes:** definición de endpoints.
-* **Middlewares:** autenticación y autorización.
-* **Controllers:** manejo HTTP request/response.
-* **Services:** reglas de negocio.
-* **Repositories:** abstracción del acceso a datos.
-* **DAO:** comunicación directa con MongoDB.
+- **Routes:** definición de endpoints.
+- **Middlewares:** autenticación y autorización.
+- **Controllers:** manejo de las peticiones HTTP.
+- **Services:** reglas de negocio.
+- **Repositories:** encapsulan el acceso a los DAO y desacoplan la lógica de negocio de la persistencia.
+- **DAO:** interacción directa con MongoDB.
 
 ---
 
-# Entidad Event
+# Entidades
 
-La entidad Event representa el núcleo de la plataforma.
+## User
+
+Representa a los usuarios registrados.
+
+Cada usuario posee un rol que determina los permisos disponibles dentro de la plataforma.
+
+Roles disponibles:
+
+- user
+- organizer
+- admin
+
+---
+
+## Event
+
+Representa un evento organizado dentro de la plataforma.
 
 Campos principales:
 
-| Campo       | Descripción                   |
-| ----------- | ----------------------------- |
-| title       | Nombre del evento             |
-| description | Descripción                   |
-| category    | Categoría                     |
-| date        | Fecha del evento              |
-| location    | Ubicación                     |
-| capacity    | Cantidad máxima de asistentes |
-| price       | Precio                        |
-| status      | Estado actual                 |
-| organizer   | Referencia al usuario creador |
+| Campo | Descripción |
+|--------|-------------|
+| title | Nombre del evento |
+| description | Descripción |
+| category | Categoría |
+| date | Fecha |
+| location | Ubicación |
+| capacity | Cupos disponibles |
+| price | Precio |
+| status | Estado del evento |
+| organizer | Usuario creador |
 
-El campo `organizer` utiliza una referencia mediante `ObjectId` hacia User.
-
-No se almacena el usuario completo dentro del evento.
-
----
-
-# Estados del evento
-
-Los estados permitidos son:
+Estados permitidos:
 
 ```text
 draft
@@ -244,89 +295,140 @@ cancelled
 finished
 ```
 
-Reglas:
+---
 
-* Todo evento nace como `draft`.
-* Un evento cancelado no puede modificarse.
-* La cancelación es lógica: cambia el estado a `cancelled`.
-* No se eliminan registros físicamente.
+## Ticket
+
+Cada Ticket representa una inscripción individual de un usuario a un evento y mantiene la referencia tanto al usuario como al evento correspondiente.
+
+Campos principales:
+
+| Campo | Descripción |
+|--------|-------------|
+| user | Usuario inscripto |
+| event | Evento |
+| quantity | Cantidad de entradas |
+| total | Precio total |
+| status | Estado del ticket |
+
+Estados permitidos:
+
+```text
+confirmed
+cancelled
+```
 
 ---
 
-# Reglas de negocio de eventos
+# Reglas de negocio
 
-Las validaciones se encuentran en la capa `services`.
+## Eventos
 
-Se controla:
+La capa de servicios valida:
 
-* Campos obligatorios.
-* Fecha válida.
-* Capacidad mayor a cero.
-* Precio mayor o igual a cero.
-* Estados permitidos.
-* Ownership del evento.
-* Restricción de modificaciones sobre eventos cancelados.
-* Restricción de publicación de eventos finalizados.
-* Restricción de publicación de eventos con fecha pasada.
+- Campos obligatorios.
+- Fechas válidas.
+- Capacidad mayor a cero.
+- Precio mayor o igual a cero.
+- Estados permitidos.
+- Ownership.
+- Restricción de modificaciones sobre eventos cancelados.
+- Restricción para publicar eventos finalizados.
+- Restricción para publicar eventos con fecha pasada.
+
+---
+
+## Tickets
+
+La capa de servicios valida:
+
+- Usuario autenticado.
+- Evento publicado.
+- Cupos disponibles.
+- Inscripción única por usuario.
+- Actualización automática de los cupos disponibles del evento.
+- Cancelación de tickets.
+- Liberación de cupos al cancelar.
+- Permisos de cancelación.
 
 ---
 
 # Autorización por roles (RBAC)
 
-Roles disponibles:
-
-| Rol       | Descripción                         |
-| --------- | ----------------------------------- |
-| user      | Usuario estándar                    |
-| organizer | Puede crear y gestionar sus eventos |
-| admin     | Acceso administrativo completo      |
-
----
-
-# Matriz de permisos
-
-| Acción                   | user | organizer | admin |
-| ------------------------ | ---- | --------- | ----- |
-| Consultar eventos        | ✅    | ✅         | ✅     |
-| Crear eventos            | ❌    | ✅         | ✅     |
-| Modificar evento propio  | ❌    | ✅         | ✅     |
-| Modificar evento ajeno   | ❌    | ❌         | ✅     |
-| Cambiar estado de evento | ❌    | ✅         | ✅     |
+| Acción | user | organizer | admin |
+|--------|------|-----------|-------|
+| Consultar eventos | ✅ | ✅ | ✅ |
+| Crear eventos | ❌ | ✅ | ✅ |
+| Modificar eventos propios | ❌ | ✅ | ✅ |
+| Modificar cualquier evento | ❌ | ❌ | ✅ |
+| Crear tickets | ✅ | ✅ | ✅ |
+| Cancelar ticket propio | ✅ | ✅ | ✅ |
+| Cancelar cualquier ticket | ❌ | ❌ | ✅ |
+| Consultar asistentes de un evento | ❌ | ✅ (propios) | ✅ |
 
 ---
 
-# Ownership de recursos
+# Ownership
 
-La plataforma implementa control de propiedad sobre eventos.
+La plataforma implementa control de propiedad sobre los recursos.
 
-Reglas:
+### Eventos
 
-* Un organizer solo puede modificar sus propios eventos.
-* Un admin puede modificar cualquier evento.
-* Un usuario estándar no puede gestionar eventos.
+- Un organizer solamente puede modificar sus propios eventos.
+- Un Admin puede modificar cualquier evento.
 
-La validación se realiza en la capa de servicios.
+### Tickets
 
----
-
-# Rutas disponibles
-
-| Método | Ruta                     | Descripción               |
-| ------ | ------------------------ | ------------------------- |
-| GET    | `/api/health`            | Estado del servidor       |
-| GET    | `/api/events`            | Listar eventos            |
-| GET    | `/api/events/:id`        | Obtener evento específico |
-| POST   | `/api/events`            | Crear evento              |
-| PUT    | `/api/events/:id`        | Modificar evento          |
-| PATCH  | `/api/events/:id/status` | Cambiar estado            |
-| POST   | `/api/sessions/register` | Registrar usuario         |
-| POST   | `/api/sessions/login`    | Login                     |
-| GET    | `/api/sessions/current`  | Usuario autenticado       |
-| POST   | `/api/sessions/logout`   | Cerrar sesión             |
+- Cada usuario puede cancelar únicamente sus propios tickets.
+- Un Admin puede cancelar cualquier ticket.
 
 ---
 
-# Listado de eventos
+# Rutas principales
+
+## Health
+
+| Método | Ruta |
+|---------|------|
+| GET | `/api/health` |
+
+---
+
+## Sessions
+
+| Método | Ruta |
+|---------|------|
+| POST | `/api/sessions/register` |
+| POST | `/api/sessions/login` |
+| GET | `/api/sessions/current` |
+| POST | `/api/sessions/logout` |
+
+---
+
+## Events
+
+| Método | Ruta |
+|---------|------|
+| GET | `/api/events` |
+| GET | `/api/events/:id` |
+| POST | `/api/events` |
+| PUT | `/api/events/:id` |
+| PATCH | `/api/events/:id/status` |
+
+---
+
+## Tickets
+
+| Método | Ruta |
+|---------|------|
+| POST | `/api/events/:id/tickets` |
+| GET | `/api/events/:id/tickets` |
+| GET | `/api/tickets/my-tickets` |
+| PATCH | `/api/tickets/:id/cancel` |
+
+---
+
+# Filtros y paginación
 
 El endpoint:
 
@@ -334,40 +436,24 @@ El endpoint:
 GET /api/events
 ```
 
-permite filtros avanzados.
+permite utilizar filtros como:
 
-Filtros disponibles:
+- status
+- category
+- location
+- dateFrom
+- dateTo
 
-```text
-status
-category
-location
-dateFrom
-dateTo
-```
+También soporta:
+
+- paginación
+- límite de resultados
+- ordenamiento
 
 Ejemplo:
 
 ```http
-/api/events?status=published&category=workshop&page=2&limit=5
-```
-
-Incluye:
-
-```json
-{
-  "data": [],
-  "page": 2,
-  "limit": 5,
-  "total": 20,
-  "totalPages": 4
-}
-```
-
-También permite ordenamiento:
-
-```http
-/api/events?sort=date
+GET /api/events?status=published&category=workshop&page=1&limit=5&sort=date
 ```
 
 ---
@@ -376,70 +462,32 @@ También permite ordenamiento:
 
 ## passportCurrent.middleware.js
 
-Responsable de autenticación:
+Responsable de:
 
-* Valida JWT.
-* Recupera usuario desde cookie HTTP Only.
-* Carga información en `req.user`.
+- Validar JWT.
+- Recuperar el usuario autenticado.
+- Cargar `req.user`.
 
 ---
 
 ## authorize.middleware.js
 
-Responsable de autorización:
+Responsable de:
 
-* Recibe roles permitidos.
-* Compara con el rol del usuario.
-* Permite o bloquea acciones.
-
-Cuando el usuario está autenticado pero no posee permisos devuelve:
-
-```text
-403 Forbidden
-```
+- Validar roles permitidos.
+- Autorizar o rechazar acciones protegidas.
 
 ---
 
-# Diferencia entre 401 y 403
+## logger.middleware.js
 
-## 401 Unauthorized
-
-Usuario no autenticado.
-
-Ejemplos:
-
-* JWT inexistente.
-* JWT inválido.
-* Sesión expirada.
+Registra el método HTTP y la URL de cada petición recibida.
 
 ---
 
-## 403 Forbidden
+# Manejo de errores
 
-Usuario autenticado pero sin permisos.
-
-Ejemplos:
-
-* Usuario intentando crear eventos.
-* Organizer modificando evento ajeno.
-
----
-
-# Pruebas automatizadas
-
-Las pruebas utilizan:
-
-* Jest.
-* Supertest.
-
-Se validan:
-
-* Respuestas HTTP.
-* Códigos de estado.
-* Cookies.
-* Permisos.
-* Validaciones de negocio.
-* Flujos completos de eventos.
+Las reglas de negocio generan errores controlados mediante AppError, permitiendo responder con códigos HTTP adecuados y mensajes consistentes desde la capa de servicios.
 
 ---
 
@@ -447,25 +495,19 @@ Se validan:
 
 Actualmente la aplicación cuenta con:
 
-* Arquitectura backend por capas.
-* Autenticación mediante Passport.js.
-* JWT mediante cookies HTTP Only.
-* Registro, login y sesión actual.
-* Sistema RBAC.
-* Ownership de recursos.
-* Entidad Event completa.
-* CRUD de eventos.
-* Validaciones de negocio.
-* Filtros y paginación.
-* Ordenamiento.
-* Cancelación lógica.
-* Tests automatizados con Jest y Supertest.
+- Arquitectura backend por capas.
+- Autenticación mediante Passport.js.
+- JWT utilizando cookies HTTP Only.
+- Registro e inicio de sesión.
+- Sistema RBAC.
+- Ownership de recursos.
+- Gestión completa de eventos.
+- Gestión completa de tickets.
+- Control automático de cupos.
+- Validaciones de negocio centralizadas.
+- Persistencia mediante MongoDB Atlas.
+- 40 pruebas automatizadas entre integración y modelos.
+- Arquitectura Repository + DAO.
+- Cobertura de pruebas sobre modelos y API REST.
 
-El proyecto queda preparado para continuar con:
-
-* Sistema de inscripciones.
-* Gestión de cupos.
-* Tickets.
-* Notificaciones.
-* Eventos de dominio.
-* Nuevas estrategias OAuth.
+El proyecto queda preparado para futuras mejoras como notificaciones por correo, documentación mediante Swagger/OpenAPI, integración con proveedores OAuth y nuevas funcionalidades orientadas a la gestión integral de eventos.

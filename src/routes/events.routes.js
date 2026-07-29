@@ -2,11 +2,11 @@ import { Router } from "express"
 import eventsController from "../controllers/events.controller.js"
 import passportCurrent from "../middlewares/passportCurrent.middleware.js"
 import authorize from "../middlewares/authorize.middleware.js"
+import ticketsController from "../controllers/tickets.controller.js"
 
 const router = Router()
 
 
-// Público
 router.get(
     "/",
     eventsController.getAllEvents
@@ -18,13 +18,25 @@ router.get(
     eventsController.getEventById
 )
 
+router.get(
+    "/:eid/tickets",
+    passportCurrent,
+    authorize("organizer", "admin"),
+    ticketsController.getEventTickets
+)
 
-// Organizer / Admin
+
 router.post(
     "/",
     passportCurrent,
     authorize("organizer", "admin"),
     eventsController.createEvent
+)
+
+router.post(
+    "/:eid/tickets",
+    passportCurrent,
+    ticketsController.createTicket
 )
 
 
