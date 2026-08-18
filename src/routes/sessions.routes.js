@@ -1,30 +1,43 @@
 import { Router } from "express"
 import passport from "passport"
 import sessionsController from "../controllers/sessions.controller.js"
+import passportCurrent from "../middlewares/passportCurrent.middleware.js"
 
 const router = Router()
 
 router.post(
     "/register",
     (req, res, next) => {
-        passport.authenticate("register", { session: false }, (err, user, info) => {
 
-            if (err) {
-                return next(err)
+        passport.authenticate(
+            "register",
+            { session: false },
+            (error, user, info) => {
+
+                if (error) {
+                    return next(error)
+                }
+
+                if (!user) {
+
+                    const authError =
+                        new Error(
+                            info?.message ||
+                            "No se pudo registrar el usuario"
+                        )
+
+                    authError.statusCode =
+                        info?.statusCode || 400
+
+                    return next(authError)
+                }
+
+                req.user = user
+
+                next()
             }
+        )(req, res, next)
 
-            if (!user) {
-                return res.status(info.statusCode || 400).json({
-                    status: "error",
-                    message: info.message
-                })
-            }
-
-            req.user = user
-
-            next()
-
-        })(req, res, next)
     },
     sessionsController.register
 )
@@ -32,53 +45,49 @@ router.post(
 router.post(
     "/login",
     (req, res, next) => {
-        passport.authenticate("login", { session: false }, (err, user, info) => {
 
-            if (err) {
-                return next(err)
+        passport.authenticate(
+            "login",
+            { session: false },
+            (error, user, info) => {
+
+                if (error) {
+                    return next(error)
+                }
+
+                if (!user) {
+
+                    const authError =
+                        new Error(
+                            info?.message ||
+                            "Credenciales inválidas"
+                        )
+
+                    authError.statusCode =
+                        info?.statusCode || 401
+
+                    return next(authError)
+                }
+
+                req.user = user
+
+                next()
             }
+        )(req, res, next)
 
-            if (!user) {
-                return res.status(info.statusCode || 401).json({
-                    status: "error",
-                    message: info.message
-                })
-            }
-
-            req.user = user
-
-            next()
-
-        })(req, res, next)
     },
     sessionsController.login
 )
 
 router.get(
     "/current",
-    (req, res, next) => {
-        passport.authenticate("current", { session: false }, (err, user) => {
-
-            if (err) {
-                return next(err)
-            }
-
-            if (!user) {
-                return res.status(401).json({
-                    status: "error",
-                    message: "No autenticado"
-                })
-            }
-
-            req.user = user
-
-            next()
-
-        })(req, res, next)
-    },
+    passportCurrent,
     sessionsController.current
 )
 
-router.post("/logout", sessionsController.logout)
+router.post(
+    "/logout",
+    sessionsController.logout
+)
 
 export default router

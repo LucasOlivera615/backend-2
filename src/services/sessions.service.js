@@ -1,72 +1,126 @@
 import usersRepository from "../repositories/users.repository.js"
 import { createHash, isValidPassword } from "../utils/hash.js"
-import jwtUtils from "../utils/jwt.js"
+import AppError from "../utils/AppError.js"
 
 const registerUser = async (userData) => {
-  const { first_name, last_name, email, password } = userData
 
-  if (!first_name || !last_name || !email || !password) {
-    throw new Error("Faltan campos obligatorios")
+  const {
+    first_name,
+    last_name,
+    email,
+    password
+  } = userData
+
+  if (
+    !first_name ||
+    !last_name ||
+    !email ||
+    !password
+  ) {
+
+    throw new AppError(
+      "Faltan campos obligatorios",
+      400
+    )
+
   }
 
-  if (!email.includes("@")) {
-    throw new Error("Email inválido")
+  const normalizedEmail =
+    email.trim().toLowerCase()
+
+  if (!normalizedEmail.includes("@")) {
+
+    throw new AppError(
+      "Email inválido",
+      400
+    )
+
   }
 
   if (password.length < 8) {
-    throw new Error("La contraseña debe tener al menos 8 caracteres")
+
+    throw new AppError(
+      "La contraseña debe tener al menos 8 caracteres",
+      400
+    )
+
   }
 
-  const normalizedEmail = email.trim().toLowerCase()
-
-  const existingUser = await usersRepository.getUserByEmail(normalizedEmail)
+  const existingUser =
+    await usersRepository.getUserByEmail(
+      normalizedEmail
+    )
 
   if (existingUser) {
-    const error = new Error("El email ya está registrado")
-    error.statusCode = 409
-    throw error
+
+    throw new AppError(
+      "El email ya está registrado",
+      409
+    )
+
   }
 
-  const hashedPassword = await createHash(password)
+  const hashedPassword =
+    await createHash(password)
 
-  const newUser = await usersRepository.createUser({
-    first_name,
-    last_name,
-    email: normalizedEmail,
-    password: hashedPassword,
-    role: "user"
-  })
+  const newUser =
+    await usersRepository.createUser({
 
-  const { password: _, ...userWithoutPassword } = newUser.toObject()
+      first_name,
+      last_name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: "user"
 
-  return userWithoutPassword
+    })
+
+  return newUser
 }
 
-
-const authenticateUser = async (email, password) => {
+const authenticateUser = async (
+  email,
+  password
+) => {
 
   if (!email || !password) {
-    const error = new Error("Credenciales inválidas")
-    error.statusCode = 401
-    throw error
+
+    throw new AppError(
+      "Credenciales inválidas",
+      401
+    )
+
   }
 
-  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedEmail =
+    email.trim().toLowerCase()
 
-  const user = await usersRepository.getUserByEmail(normalizedEmail)
+  const user =
+    await usersRepository.getUserByEmail(
+      normalizedEmail
+    )
 
   if (!user) {
-    const error = new Error("Credenciales inválidas")
-    error.statusCode = 401
-    throw error
+
+    throw new AppError(
+      "Credenciales inválidas",
+      401
+    )
+
   }
 
-  const validPassword = await isValidPassword(password, user.password)
+  const validPassword =
+    await isValidPassword(
+      password,
+      user.password
+    )
 
   if (!validPassword) {
-    const error = new Error("Credenciales inválidas")
-    error.statusCode = 401
-    throw error
+
+    throw new AppError(
+      "Credenciales inválidas",
+      401
+    )
+
   }
 
   return user

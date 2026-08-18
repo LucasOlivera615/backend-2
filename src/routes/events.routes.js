@@ -6,16 +6,9 @@ import ticketsController from "../controllers/tickets.controller.js"
 
 const router = Router()
 
-
 router.get(
     "/",
     eventsController.getAllEvents
-)
-
-
-router.get(
-    "/:id",
-    eventsController.getEventById
 )
 
 router.get(
@@ -25,6 +18,10 @@ router.get(
     ticketsController.getEventTickets
 )
 
+router.get(
+    "/:id",
+    eventsController.getEventById
+)
 
 router.post(
     "/",
@@ -39,14 +36,12 @@ router.post(
     ticketsController.createTicket
 )
 
-
 router.put(
     "/:id",
     passportCurrent,
     authorize("organizer", "admin"),
     eventsController.updateEvent
 )
-
 
 router.patch(
     "/:id/status",

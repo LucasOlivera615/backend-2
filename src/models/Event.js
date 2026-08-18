@@ -9,13 +9,11 @@ const eventSchema = new mongoose.Schema({
     trim: true
   },
 
-
   description: {
     type: String,
     required: true,
     trim: true
   },
-
 
   category: {
     type: String,
@@ -23,12 +21,10 @@ const eventSchema = new mongoose.Schema({
     trim: true
   },
 
-
   date: {
     type: Date,
     required: true
   },
-
 
   location: {
     type: String,
@@ -36,20 +32,17 @@ const eventSchema = new mongoose.Schema({
     trim: true
   },
 
-
   capacity: {
     type: Number,
     required: true,
     min: 1
   },
 
-
   price: {
     type: Number,
     required: true,
     min: 0
   },
-
 
   status: {
     type: String,
@@ -62,17 +55,19 @@ const eventSchema = new mongoose.Schema({
     default: "draft"
   },
 
-
   organizer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
   }
 
-
 }, {
   timestamps: true
 })
 
 
-export default mongoose.model("Event", eventSchema)
+const Event =
+  mongoose.model("Event", eventSchema)
+
+
+export default Event

@@ -2,17 +2,14 @@
 
 API REST desarrollada como proyecto del curso **Backend II de Coderhouse**.
 
-El objetivo del proyecto es construir una plataforma para la gestión de eventos e inscripciones aplicando una arquitectura por capas, separación de responsabilidades y reglas de negocio centralizadas en la capa de servicios.
+La aplicación permite gestionar usuarios, eventos e inscripciones mediante tickets, incorporando autenticación, autorización por roles, validaciones de negocio y persistencia con MongoDB.
 
-En esta séptima entrega se incorpora el **sistema completo de inscripciones mediante la entidad Ticket**, permitiendo gestionar asistentes, controlar cupos disponibles, cancelar inscripciones y validar reglas de negocio complejas. Además, se amplía la cobertura mediante pruebas automatizadas de integración y pruebas unitarias sobre los modelos principales.
-
-La autenticación continúa centralizada mediante **Passport.js**, JWT y cookies HTTP Only.
+El proyecto utiliza una arquitectura por capas basada en **DAO, Repository, Service, Controller y DTO**, buscando separar responsabilidades y mantener la lógica de negocio desacoplada de la persistencia.
 
 ---
 
-# Tecnologías
+## Tecnologías
 
-- JavaScript (ES Modules)
 - Node.js
 - Express
 - MongoDB Atlas
@@ -20,30 +17,24 @@ La autenticación continúa centralizada mediante **Passport.js**, JWT y cookies
 - Passport.js
 - passport-local
 - passport-jwt
+- JWT
 - bcrypt
-- JSON Web Token (JWT)
 - cookie-parser
 - dotenv
+- Nodemailer
 - Jest
 - Supertest
 - pnpm
-- Nodemailer
 
 ---
 
-# Instalación
+## Instalación
 
-1. Clonar el repositorio:
+Clonar el repositorio:
 
 ```bash
 git clone <URL_DEL_REPOSITORIO>
-```
-
-2. Acceder al directorio:
-
-```bash
 cd backend-2
-```
 
 3. Instalar dependencias:
 
@@ -72,6 +63,7 @@ MAIL_HOST=<smtp_host>
 MAIL_PORT=<smtp_port>
 MAIL_USER=<smtp_user>
 MAIL_PASS=<smtp_password>
+MAIL_FROM=CoderEventos <example@gmail.com>
 ```
 
 ---
@@ -96,44 +88,7 @@ Ejecutar:
 pnpm test
 ```
 
-Actualmente el proyecto cuenta con 40 pruebas automatizadas entre pruebas de integración (API REST) y pruebas unitarias de modelos, desarrolladas con Jest y Supertest., cubriendo:
-
-## Usuarios y autenticación
-
-- Registro de usuarios.
-- Registro con email duplicado.
-- Inicio de sesión.
-- Credenciales inválidas.
-- Usuario autenticado.
-- Logout.
-
-## Eventos
-
-- Creación de eventos.
-- Validaciones de negocio.
-- Validación de ownership.
-- Control RBAC.
-- Consulta individual.
-- Listado con filtros.
-- Paginación.
-- Cambio de estado.
-- Cancelación lógica.
-
-## Tickets
-
-- Inscripción a eventos publicados.
-- Validación de cupos disponibles.
-- Prevención de inscripciones duplicadas.
-- Consulta de tickets propios.
-- Consulta de asistentes por evento.
-- Cancelación de tickets.
-- Liberación automática de cupos.
-- Permisos administrativos.
-
-## Modelos
-
-- Validaciones del modelo Event.
-- Validaciones del modelo Ticket.
+Actualmente el proyecto cuenta con 40 pruebas automatizadas entre pruebas de integración (API REST) y pruebas unitarias de modelos, desarrolladas con Jest y Supertest.
 
 ---
 
@@ -158,8 +113,14 @@ backend-2/
 │   │   ├── tickets.dao.js
 │   │   └── users.dao.js
 │   │
+│   ├── dto/
+│   │   ├── event.dto.js
+│   │   ├── ticket.dto.js
+│   │   └── user.dto.js
+│   │
 │   ├── middlewares/
 │   │   ├── authorize.middleware.js
+│   │   ├── error.middleware.js
 │   │   ├── logger.middleware.js
 │   │   └── passportCurrent.middleware.js
 │   │
@@ -170,7 +131,6 @@ backend-2/
 │   │
 │   ├── repositories/
 │   │   ├── events.repository.js
-│   │   ├── sessions.repository.js
 │   │   ├── tickets.repository.js
 │   │   └── users.repository.js
 │   │
@@ -249,107 +209,8 @@ Cada capa posee una responsabilidad específica:
 - **Services:** reglas de negocio.
 - **Repositories:** encapsulan el acceso a los DAO y desacoplan la lógica de negocio de la persistencia.
 - **DAO:** interacción directa con MongoDB.
-
----
-
-# Entidades
-
-## User
-
-Representa a los usuarios registrados.
-
-Cada usuario posee un rol que determina los permisos disponibles dentro de la plataforma.
-
-Roles disponibles:
-
-- user
-- organizer
-- admin
-
----
-
-## Event
-
-Representa un evento organizado dentro de la plataforma.
-
-Campos principales:
-
-| Campo | Descripción |
-|--------|-------------|
-| title | Nombre del evento |
-| description | Descripción |
-| category | Categoría |
-| date | Fecha |
-| location | Ubicación |
-| capacity | Cupos disponibles |
-| price | Precio |
-| status | Estado del evento |
-| organizer | Usuario creador |
-
-Estados permitidos:
-
-```text
-draft
-published
-cancelled
-finished
-```
-
----
-
-## Ticket
-
-Cada Ticket representa una inscripción individual de un usuario a un evento y mantiene la referencia tanto al usuario como al evento correspondiente.
-
-Campos principales:
-
-| Campo | Descripción |
-|--------|-------------|
-| user | Usuario inscripto |
-| event | Evento |
-| quantity | Cantidad de entradas |
-| total | Precio total |
-| status | Estado del ticket |
-
-Estados permitidos:
-
-```text
-confirmed
-cancelled
-```
-
----
-
-# Reglas de negocio
-
-## Eventos
-
-La capa de servicios valida:
-
-- Campos obligatorios.
-- Fechas válidas.
-- Capacidad mayor a cero.
-- Precio mayor o igual a cero.
-- Estados permitidos.
-- Ownership.
-- Restricción de modificaciones sobre eventos cancelados.
-- Restricción para publicar eventos finalizados.
-- Restricción para publicar eventos con fecha pasada.
-
----
-
-## Tickets
-
-La capa de servicios valida:
-
-- Usuario autenticado.
-- Evento publicado.
-- Cupos disponibles.
-- Inscripción única por usuario.
-- Actualización automática de los cupos disponibles del evento.
-- Cancelación de tickets.
-- Liberación de cupos al cancelar.
-- Permisos de cancelación.
+- **DTO:** controlan la información que se expone en las respuestas de la API.
+- **Models:** definen los esquemas y estructuras persistidas en MongoDB.
 
 ---
 
@@ -365,22 +226,6 @@ La capa de servicios valida:
 | Cancelar ticket propio | ✅ | ✅ | ✅ |
 | Cancelar cualquier ticket | ❌ | ❌ | ✅ |
 | Consultar asistentes de un evento | ❌ | ✅ (propios) | ✅ |
-
----
-
-# Ownership
-
-La plataforma implementa control de propiedad sobre los recursos.
-
-### Eventos
-
-- Un organizer solamente puede modificar sus propios eventos.
-- Un Admin puede modificar cualquier evento.
-
-### Tickets
-
-- Cada usuario puede cancelar únicamente sus propios tickets.
-- Un Admin puede cancelar cualquier ticket.
 
 ---
 
@@ -458,56 +303,20 @@ GET /api/events?status=published&category=workshop&page=1&limit=5&sort=date
 
 ---
 
-# Middlewares
-
-## passportCurrent.middleware.js
-
-Responsable de:
-
-- Validar JWT.
-- Recuperar el usuario autenticado.
-- Cargar `req.user`.
-
----
-
-## authorize.middleware.js
-
-Responsable de:
-
-- Validar roles permitidos.
-- Autorizar o rechazar acciones protegidas.
-
----
-
-## logger.middleware.js
-
-Registra el método HTTP y la URL de cada petición recibida.
-
----
-
 # Manejo de errores
 
 Las reglas de negocio generan errores controlados mediante AppError, permitiendo responder con códigos HTTP adecuados y mensajes consistentes desde la capa de servicios.
 
 ---
 
-# Estado del proyecto
+# Middlewares
 
-Actualmente la aplicación cuenta con:
+Autenticación, autorización, logging y manejo de errores.
 
-- Arquitectura backend por capas.
-- Autenticación mediante Passport.js.
-- JWT utilizando cookies HTTP Only.
-- Registro e inicio de sesión.
-- Sistema RBAC.
-- Ownership de recursos.
-- Gestión completa de eventos.
-- Gestión completa de tickets.
-- Control automático de cupos.
-- Validaciones de negocio centralizadas.
-- Persistencia mediante MongoDB Atlas.
-- 40 pruebas automatizadas entre integración y modelos.
-- Arquitectura Repository + DAO.
-- Cobertura de pruebas sobre modelos y API REST.
+---
 
-El proyecto queda preparado para futuras mejoras como notificaciones por correo, documentación mediante Swagger/OpenAPI, integración con proveedores OAuth y nuevas funcionalidades orientadas a la gestión integral de eventos.
+## Estado
+
+Proyecto correspondiente a la **Pre-entrega 8: Arquitectura con DAO, Repository y DTO**.
+
+Todos los tests automatizados pasan correctamente.

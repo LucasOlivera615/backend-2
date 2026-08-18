@@ -1,7 +1,9 @@
 import mongoose from "mongoose"
 
+
 const ticketSchema = new mongoose.Schema(
     {
+
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -28,7 +30,11 @@ const ticketSchema = new mongoose.Schema(
         quantity: {
             type: Number,
             required: true,
-            min: 1
+            min: 1,
+            validate: {
+                validator: Number.isInteger,
+                message: "La cantidad debe ser un número entero"
+            }
         },
 
         reservationCode: {
@@ -42,20 +48,25 @@ const ticketSchema = new mongoose.Schema(
             type: Date,
             default: null
         }
+
     },
     {
         timestamps: true
     }
 )
 
+
 ticketSchema.index({
     user: 1,
     event: 1
 })
 
-const Ticket = mongoose.model(
-    "Ticket",
-    ticketSchema
-)
+
+const Ticket =
+    mongoose.model(
+        "Ticket",
+        ticketSchema
+    )
+
 
 export default Ticket

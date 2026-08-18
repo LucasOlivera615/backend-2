@@ -2,13 +2,21 @@ import eventsDao from "../dao/events.dao.js"
 
 const createEvent = async (eventData) => {
 
-  return await eventsDao.createEvent(eventData)
+  return await eventsDao.createEvent(
+    eventData
+  )
 
 }
 
-const getAllEvents = async (filters, options) => {
+const getAllEvents = async (
+  filters = {},
+  options = {}
+) => {
 
-  return await eventsDao.getAllEvents(filters, options)
+  return await eventsDao.getAllEvents(
+    filters,
+    options
+  )
 
 }
 
@@ -18,9 +26,15 @@ const getEventById = async (id) => {
 
 }
 
-const updateEvent = async (id, eventData) => {
+const updateEvent = async (
+  id,
+  eventData
+) => {
 
-  return await eventsDao.updateEvent(id, eventData)
+  return await eventsDao.updateEvent(
+    id,
+    eventData
+  )
 
 }
 

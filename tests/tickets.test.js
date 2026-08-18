@@ -73,20 +73,22 @@ describe("Tickets API", () => {
             .toBe(201)
 
 
-
         const organizerResponse =
             await request(app)
                 .post("/api/sessions/register")
                 .send(organizer)
 
 
+        expect(organizerResponse.statusCode)
+            .toBe(201)
+
+
         await User.findByIdAndUpdate(
-            organizerResponse.body.payload._id,
+            organizerResponse.body.payload.id,
             {
                 role: "organizer"
             }
         )
-
 
 
         const adminResponse =
@@ -95,8 +97,12 @@ describe("Tickets API", () => {
                 .send(admin)
 
 
+        expect(adminResponse.statusCode)
+            .toBe(201)
+
+
         await User.findByIdAndUpdate(
-            adminResponse.body.payload._id,
+            adminResponse.body.payload.id,
             {
                 role: "admin"
             }
@@ -104,7 +110,7 @@ describe("Tickets API", () => {
 
 
         expect(userResponse.body.payload)
-            .toHaveProperty("_id")
+            .toHaveProperty("id")
 
     })
 
@@ -206,9 +212,8 @@ describe("Tickets API", () => {
             .toBe(201)
 
 
-
         eventId =
-            response.body.payload._id
+            response.body.payload.id
 
 
         expect(eventId)
@@ -268,7 +273,7 @@ describe("Tickets API", () => {
 
 
         expect(response.body.payload)
-            .toHaveProperty("_id")
+            .toHaveProperty("id")
 
 
         expect(response.body.payload.status)
@@ -280,7 +285,7 @@ describe("Tickets API", () => {
 
 
         ticketId =
-            response.body.payload._id
+            response.body.payload.id
 
     })
 
@@ -302,7 +307,7 @@ describe("Tickets API", () => {
 
 
         expect(response.statusCode)
-            .toBe(400)
+            .toBe(409)
 
 
         expect(response.body.message)
@@ -334,6 +339,9 @@ describe("Tickets API", () => {
             .toBe("success")
 
 
+        expect(response.body.payload)
+            .toBeInstanceOf(Array)
+
     })
 
 
@@ -356,6 +364,10 @@ describe("Tickets API", () => {
 
         expect(response.body.status)
             .toBe("success")
+
+
+        expect(response.body.payload)
+            .toBeInstanceOf(Array)
 
     })
 
@@ -433,6 +445,10 @@ describe("Tickets API", () => {
         expect(response.body.payload.status)
             .toBe("confirmed")
 
+
+        expect(response.body.payload)
+            .toHaveProperty("id")
+
     })
 
 
@@ -452,10 +468,14 @@ describe("Tickets API", () => {
                 })
 
 
+        expect(ticketResponse.statusCode)
+            .toBe(201)
+
+
         const response =
             await request(app)
                 .patch(
-                    `/api/tickets/${ticketResponse.body.payload._id}/cancel`
+                    `/api/tickets/${ticketResponse.body.payload.id}/cancel`
                 )
                 .set(
                     "Cookie",
@@ -465,6 +485,14 @@ describe("Tickets API", () => {
 
         expect(response.statusCode)
             .toBe(200)
+
+
+        expect(response.body.status)
+            .toBe("success")
+
+
+        expect(response.body.payload.status)
+            .toBe("cancelled")
 
     })
 

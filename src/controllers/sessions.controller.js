@@ -1,33 +1,32 @@
-import sessionsService from "../services/sessions.service.js"
 import jwtUtils from "../utils/jwt.js"
 import env from "../config/env.js"
+import UserDTO from "../dto/user.dto.js"
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
 
     try {
 
-        res.status(201).json({
+        return res.status(201).json({
             status: "success",
-            payload: req.user
+            payload: UserDTO.toUserDTO(req.user)
         })
 
     } catch (error) {
 
-        res.status(error.statusCode || 400).json({
-            status: "error",
-            message: error.message
-        })
+        next(error)
 
     }
+
 }
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
 
     try {
 
-        const token = jwtUtils.generateToken(req.user)
+        const token =
+            jwtUtils.generateToken(req.user)
 
-        res
+        return res
             .cookie("currentUser", token, {
                 httpOnly: true,
                 sameSite: "lax",
@@ -42,31 +41,45 @@ const login = async (req, res) => {
 
     } catch (error) {
 
-        res.status(error.statusCode || 401).json({
-            status: "error",
-            message: error.message
-        })
+        next(error)
 
     }
-}
-
-const current = (req, res) => {
-
-    res.status(200).json({
-        status: "success",
-        payload: req.user
-    })
 
 }
 
-const logout = (req, res) => {
+const current = async (req, res, next) => {
 
-    res.clearCookie("currentUser")
+    try {
 
-    res.status(200).json({
-        status: "success",
-        message: "Sesión cerrada"
-    })
+        return res.status(200).json({
+            status: "success",
+            payload: UserDTO.toUserDTO(req.user)
+        })
+
+    } catch (error) {
+
+        next(error)
+
+    }
+
+}
+
+const logout = async (req, res, next) => {
+
+    try {
+
+        res.clearCookie("currentUser")
+
+        return res.status(200).json({
+            status: "success",
+            message: "Sesión cerrada"
+        })
+
+    } catch (error) {
+
+        next(error)
+
+    }
 
 }
 

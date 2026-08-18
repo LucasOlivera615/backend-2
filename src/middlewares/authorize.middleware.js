@@ -1,22 +1,34 @@
+import AppError from "../utils/AppError.js"
+
 const authorize = (...allowedRoles) => {
+
   return (req, res, next) => {
 
     if (!req.user) {
-      return res.status(401).json({
-        status: "error",
-        message: "No autenticado"
-      })
+
+      return next(
+        new AppError(
+          "No autenticado",
+          401
+        )
+      )
+
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        status: "error",
-        message: "No tenés permisos para realizar esta acción"
-      })
+
+      return next(
+        new AppError(
+          "No tenés permisos para realizar esta acción",
+          403
+        )
+      )
+
     }
 
     next()
   }
+
 }
 
 export default authorize

@@ -2,7 +2,9 @@ import ticketsDao from "../dao/tickets.dao.js"
 
 const createTicket = async (ticketData) => {
 
-    return await ticketsDao.createTicket(ticketData)
+    return await ticketsDao.createTicket(
+        ticketData
+    )
 
 }
 
@@ -35,7 +37,9 @@ const getActiveTicket = async (userId, eventId) => {
 
 const countReservedSeats = async (eventId) => {
 
-    return await ticketsDao.countReservedSeats(eventId)
+    return await ticketsDao.countReservedSeats(
+        eventId
+    )
 
 }
 

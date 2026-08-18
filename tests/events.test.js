@@ -76,7 +76,7 @@ describe("Events API", () => {
 
 
         organizerId =
-            organizerResponse.body.payload._id
+            organizerResponse.body.payload.id
 
 
         await User.findByIdAndUpdate(
@@ -95,7 +95,7 @@ describe("Events API", () => {
 
 
         userId =
-            userResponse.body.payload._id
+            userResponse.body.payload.id
 
 
 
@@ -105,9 +105,8 @@ describe("Events API", () => {
                 .send(admin)
 
 
-
         await User.findByIdAndUpdate(
-            adminResponse.body.payload._id,
+            adminResponse.body.payload.id,
             {
                 role: "admin"
             }
@@ -210,7 +209,7 @@ describe("Events API", () => {
 
 
         await User.findByIdAndUpdate(
-            registerResponse.body.payload._id,
+            registerResponse.body.payload.id,
             {
                 role: "organizer"
             }
@@ -273,7 +272,7 @@ describe("Events API", () => {
 
 
         eventId =
-            response.body.payload._id
+            response.body.payload.id
 
     })
 
@@ -307,7 +306,7 @@ describe("Events API", () => {
 
 
         secondEventId =
-            response.body.payload._id
+            response.body.payload.id
 
     })
 
@@ -487,7 +486,9 @@ describe("Events API", () => {
 
 
         expect(response.body.message)
-            .toBe("No autorizado")
+            .toBe(
+                "No autorizado"
+            )
 
     })
 

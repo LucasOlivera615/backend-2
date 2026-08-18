@@ -1,4 +1,5 @@
 import eventsRepository from "../repositories/events.repository.js"
+import EventDTO from "../dto/event.dto.js"
 import AppError from "../utils/AppError.js"
 
 
@@ -10,7 +11,10 @@ const VALID_STATUS = [
 ]
 
 
-const createEvent = async (eventData, organizerId) => {
+const createEvent = async (
+  eventData,
+  organizerId
+) => {
 
   const requiredFields = [
     "title",
@@ -18,7 +22,6 @@ const createEvent = async (eventData, organizerId) => {
     "category",
     "location"
   ]
-
 
   for (const field of requiredFields) {
 
@@ -33,8 +36,19 @@ const createEvent = async (eventData, organizerId) => {
 
   }
 
+  const eventDate =
+    new Date(eventData.date)
 
-  if (new Date(eventData.date) < new Date()) {
+  if (isNaN(eventDate.getTime())) {
+
+    throw new AppError(
+      "La fecha del evento no es válida",
+      400
+    )
+
+  }
+
+  if (eventDate < new Date()) {
 
     throw new AppError(
       "No se puede crear un evento con fecha pasada",
@@ -42,7 +56,6 @@ const createEvent = async (eventData, organizerId) => {
     )
 
   }
-
 
   if (
     typeof eventData.capacity !== "number" ||
@@ -56,7 +69,6 @@ const createEvent = async (eventData, organizerId) => {
 
   }
 
-
   if (
     typeof eventData.price !== "number" ||
     eventData.price < 0
@@ -69,21 +81,19 @@ const createEvent = async (eventData, organizerId) => {
 
   }
 
+  const event =
+    await eventsRepository.createEvent({
+      ...eventData,
+      organizer: organizerId,
+      status: "draft"
+    })
 
-  return await eventsRepository.createEvent({
-
-    ...eventData,
-    organizer: organizerId,
-    status: "draft"
-
-  })
+  return EventDTO.toEventDTO(event)
 
 }
 
 
-
 const getAllEvents = async (query) => {
-
 
   const {
     status,
@@ -94,24 +104,31 @@ const getAllEvents = async (query) => {
     page = 1,
     limit = 10,
     sort
-
   } = query
 
 
   const filters = {}
 
 
-  if (status)
+  if (status) {
+
     filters.status = status
 
+  }
 
-  if (category)
+
+  if (category) {
+
     filters.category = category
 
+  }
 
-  if (location)
+
+  if (location) {
+
     filters.location = location
 
+  }
 
 
   if (dateFrom || dateTo) {
@@ -119,37 +136,114 @@ const getAllEvents = async (query) => {
     filters.date = {}
 
 
-    if (dateFrom)
-      filters.date.$gte = new Date(dateFrom)
+    if (dateFrom) {
+
+      const parsedDateFrom =
+        new Date(dateFrom)
+
+      if (
+        isNaN(
+          parsedDateFrom.getTime()
+        )
+      ) {
+
+        throw new AppError(
+          "La fecha inicial no es válida",
+          400
+        )
+
+      }
+
+      filters.date.$gte =
+        parsedDateFrom
+
+    }
 
 
-    if (dateTo)
-      filters.date.$lte = new Date(dateTo)
+    if (dateTo) {
+
+      const parsedDateTo =
+        new Date(dateTo)
+
+      if (
+        isNaN(
+          parsedDateTo.getTime()
+        )
+      ) {
+
+        throw new AppError(
+          "La fecha final no es válida",
+          400
+        )
+
+      }
+
+      filters.date.$lte =
+        parsedDateTo
+
+    }
 
   }
 
+
+  const parsedPage =
+    Number(page)
+
+  const parsedLimit =
+    Number(limit)
+
+
+  if (
+    !Number.isInteger(parsedPage) ||
+    parsedPage < 1
+  ) {
+
+    throw new AppError(
+      "El número de página no es válido",
+      400
+    )
+
+  }
+
+
+  if (
+    !Number.isInteger(parsedLimit) ||
+    parsedLimit < 1
+  ) {
+
+    throw new AppError(
+      "El límite de resultados no es válido",
+      400
+    )
+
+  }
 
 
   const options = {
-
-    page: Number(page),
-    limit: Number(limit),
+    page: parsedPage,
+    limit: parsedLimit,
     sort
-
   }
 
 
-  return await eventsRepository.getAllEvents(
-    filters,
-    options
-  )
+  const result =
+    await eventsRepository.getAllEvents(
+      filters,
+      options
+    )
+
+
+  return {
+    ...result,
+    data: result.data.map(
+      event => EventDTO.toEventDTO(event)
+    )
+  }
 
 }
 
 
-
 const getEventById = async (id) => {
-
 
   const event =
     await eventsRepository.getEventById(id)
@@ -165,20 +259,20 @@ const getEventById = async (id) => {
   }
 
 
-  return event
+  return EventDTO.toEventDTO(event)
 
 }
 
 
-
-const validateOwnership = (event, user) => {
-
+const validateOwnership = (
+  event,
+  user
+) => {
 
   const organizerId =
-    event.organizer._id
+    event.organizer?._id
       ? event.organizer._id.toString()
-      : event.organizer.toString()
-
+      : event.organizer?.toString()
 
 
   const isOwner =
@@ -187,7 +281,6 @@ const validateOwnership = (event, user) => {
 
   const isAdmin =
     user.role === "admin"
-
 
 
   if (!isOwner && !isAdmin) {
@@ -202,13 +295,14 @@ const validateOwnership = (event, user) => {
 }
 
 
-
-const updateEvent = async (id, data, user) => {
-
+const updateEvent = async (
+  id,
+  data,
+  user
+) => {
 
   const event =
     await eventsRepository.getEventById(id)
-
 
 
   if (!event) {
@@ -221,8 +315,9 @@ const updateEvent = async (id, data, user) => {
   }
 
 
-
-  if (event.status === "cancelled") {
+  if (
+    event.status === "cancelled"
+  ) {
 
     throw new AppError(
       "Un evento cancelado no puede modificarse",
@@ -232,23 +327,42 @@ const updateEvent = async (id, data, user) => {
   }
 
 
+  validateOwnership(
+    event,
+    user
+  )
 
-  validateOwnership(event, user)
+
+  if (data.date !== undefined) {
+
+    const eventDate =
+      new Date(data.date)
 
 
+    if (
+      isNaN(
+        eventDate.getTime()
+      )
+    ) {
 
-  if (
-    data.date &&
-    new Date(data.date) < new Date()
-  ) {
+      throw new AppError(
+        "La fecha del evento no es válida",
+        400
+      )
 
-    throw new AppError(
-      "La fecha no puede ser pasada",
-      400
-    )
+    }
+
+
+    if (eventDate < new Date()) {
+
+      throw new AppError(
+        "La fecha no puede ser pasada",
+        400
+      )
+
+    }
 
   }
-
 
 
   if (
@@ -267,7 +381,6 @@ const updateEvent = async (id, data, user) => {
   }
 
 
-
   if (
     data.price !== undefined &&
     (
@@ -284,29 +397,39 @@ const updateEvent = async (id, data, user) => {
   }
 
 
-
-  delete data.status
-  delete data.organizer
-  delete data._id
-  delete data.id
+  const updateData = {
+    ...data
+  }
 
 
+  delete updateData.status
+  delete updateData.organizer
+  delete updateData._id
+  delete updateData.id
 
-  return await eventsRepository.updateEvent(
-    id,
-    data
+
+  const updatedEvent =
+    await eventsRepository.updateEvent(
+      id,
+      updateData
+    )
+
+
+  return EventDTO.toEventDTO(
+    updatedEvent
   )
 
 }
 
 
-
-const updateStatus = async (id, status, user) => {
-
+const updateStatus = async (
+  id,
+  status,
+  user
+) => {
 
   const event =
     await eventsRepository.getEventById(id)
-
 
 
   if (!event) {
@@ -319,9 +442,10 @@ const updateStatus = async (id, status, user) => {
   }
 
 
-
-  validateOwnership(event, user)
-
+  validateOwnership(
+    event,
+    user
+  )
 
 
   if (!status) {
@@ -334,8 +458,9 @@ const updateStatus = async (id, status, user) => {
   }
 
 
-
-  if (!VALID_STATUS.includes(status)) {
+  if (
+    !VALID_STATUS.includes(status)
+  ) {
 
     throw new AppError(
       "Estado inválido",
@@ -345,8 +470,9 @@ const updateStatus = async (id, status, user) => {
   }
 
 
-
-  if (event.status === "cancelled") {
+  if (
+    event.status === "cancelled"
+  ) {
 
     throw new AppError(
       "Un evento cancelado no puede cambiar de estado",
@@ -354,7 +480,6 @@ const updateStatus = async (id, status, user) => {
     )
 
   }
-
 
 
   if (
@@ -370,7 +495,6 @@ const updateStatus = async (id, status, user) => {
   }
 
 
-
   if (
     status === "published" &&
     event.date < new Date()
@@ -384,15 +508,21 @@ const updateStatus = async (id, status, user) => {
   }
 
 
+  const updatedEvent =
+    await eventsRepository.updateEvent(
+      id,
+      {
+        status
+      }
+    )
 
-  return await eventsRepository.updateEvent(
-    id,
-    {
-      status
-    }
+
+  return EventDTO.toEventDTO(
+    updatedEvent
   )
 
 }
+
 
 export default {
   createEvent,

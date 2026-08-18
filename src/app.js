@@ -7,6 +7,7 @@ import loggerMiddleware from "./middlewares/logger.middleware.js"
 import cookieParser from "cookie-parser"
 import passport from "passport"
 import initializePassport from "./config/passport.config.js"
+import errorMiddleware from "./middlewares/error.middleware.js"
 
 const app = express()
 
@@ -27,5 +28,7 @@ app.use("/api/events", eventsRouter)
 app.use("/api/tickets", ticketsRouter)
 
 app.use("/api/sessions", sessionsRouter)
+
+app.use(errorMiddleware)
 
 export default app
