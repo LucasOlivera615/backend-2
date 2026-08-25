@@ -1,4 +1,5 @@
 import eventsService from "../services/events.service.js"
+import EventDTO from "../dto/event.dto.js"
 
 
 const createEvent = async (req, res) => {
@@ -11,7 +12,7 @@ const createEvent = async (req, res) => {
 
     return res.status(201).json({
         status: "success",
-        payload: event
+        payload: EventDTO.toEventDTO(event)
     })
 
 }
@@ -26,7 +27,9 @@ const getAllEvents = async (req, res) => {
 
     return res.status(200).json({
         status: "success",
-        data: result.data,
+        data: result.data.map(
+            event => EventDTO.toEventDTO(event)
+        ),
         page: result.page,
         limit: result.limit,
         total: result.total,
@@ -45,7 +48,7 @@ const getEventById = async (req, res) => {
 
     return res.status(200).json({
         status: "success",
-        payload: event
+        payload: EventDTO.toEventDTO(event)
     })
 
 }
@@ -62,7 +65,7 @@ const updateEvent = async (req, res) => {
 
     return res.status(200).json({
         status: "success",
-        payload: event
+        payload: EventDTO.toEventDTO(event)
     })
 
 }
@@ -79,7 +82,7 @@ const updateStatus = async (req, res) => {
 
     return res.status(200).json({
         status: "success",
-        payload: event
+        payload: EventDTO.toEventDTO(event)
     })
 
 }

@@ -1,5 +1,4 @@
 import eventsRepository from "../repositories/events.repository.js"
-import EventDTO from "../dto/event.dto.js"
 import AppError from "../utils/AppError.js"
 
 
@@ -36,8 +35,10 @@ const createEvent = async (
 
   }
 
+
   const eventDate =
     new Date(eventData.date)
+
 
   if (isNaN(eventDate.getTime())) {
 
@@ -48,6 +49,7 @@ const createEvent = async (
 
   }
 
+
   if (eventDate < new Date()) {
 
     throw new AppError(
@@ -56,6 +58,7 @@ const createEvent = async (
     )
 
   }
+
 
   if (
     typeof eventData.capacity !== "number" ||
@@ -69,6 +72,7 @@ const createEvent = async (
 
   }
 
+
   if (
     typeof eventData.price !== "number" ||
     eventData.price < 0
@@ -81,6 +85,7 @@ const createEvent = async (
 
   }
 
+
   const event =
     await eventsRepository.createEvent({
       ...eventData,
@@ -88,7 +93,8 @@ const createEvent = async (
       status: "draft"
     })
 
-  return EventDTO.toEventDTO(event)
+
+  return event
 
 }
 
@@ -141,6 +147,7 @@ const getAllEvents = async (query) => {
       const parsedDateFrom =
         new Date(dateFrom)
 
+
       if (
         isNaN(
           parsedDateFrom.getTime()
@@ -154,6 +161,7 @@ const getAllEvents = async (query) => {
 
       }
 
+
       filters.date.$gte =
         parsedDateFrom
 
@@ -164,6 +172,7 @@ const getAllEvents = async (query) => {
 
       const parsedDateTo =
         new Date(dateTo)
+
 
       if (
         isNaN(
@@ -178,6 +187,7 @@ const getAllEvents = async (query) => {
 
       }
 
+
       filters.date.$lte =
         parsedDateTo
 
@@ -188,6 +198,7 @@ const getAllEvents = async (query) => {
 
   const parsedPage =
     Number(page)
+
 
   const parsedLimit =
     Number(limit)
@@ -233,12 +244,7 @@ const getAllEvents = async (query) => {
     )
 
 
-  return {
-    ...result,
-    data: result.data.map(
-      event => EventDTO.toEventDTO(event)
-    )
-  }
+  return result
 
 }
 
@@ -259,7 +265,7 @@ const getEventById = async (id) => {
   }
 
 
-  return EventDTO.toEventDTO(event)
+  return event
 
 }
 
@@ -415,9 +421,7 @@ const updateEvent = async (
     )
 
 
-  return EventDTO.toEventDTO(
-    updatedEvent
-  )
+  return updatedEvent
 
 }
 
@@ -517,9 +521,7 @@ const updateStatus = async (
     )
 
 
-  return EventDTO.toEventDTO(
-    updatedEvent
-  )
+  return updatedEvent
 
 }
 

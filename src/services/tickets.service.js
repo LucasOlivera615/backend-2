@@ -3,7 +3,6 @@ import ticketsRepository from "../repositories/tickets.repository.js"
 import eventsRepository from "../repositories/events.repository.js"
 import usersRepository from "../repositories/users.repository.js"
 import mailService from "./mail.service.js"
-import TicketDTO from "../dto/ticket.dto.js"
 import AppError from "../utils/AppError.js"
 
 
@@ -142,9 +141,7 @@ const createTicket = async (
     }
 
 
-    return TicketDTO.toTicketDTO(
-        ticket
-    )
+    return ticket
 
 }
 
@@ -159,9 +156,7 @@ const getMyTickets = async (
         )
 
 
-    return tickets.map(
-        ticket => TicketDTO.toTicketDTO(ticket)
-    )
+    return tickets
 
 }
 
@@ -217,9 +212,7 @@ const getEventTickets = async (
         )
 
 
-    return tickets.map(
-        ticket => TicketDTO.toTicketDTO(ticket)
-    )
+    return tickets
 
 }
 
@@ -289,9 +282,7 @@ const cancelTicket = async (
         )
 
 
-    return TicketDTO.toTicketDTO(
-        updatedTicket
-    )
+    return updatedTicket
 
 }
 

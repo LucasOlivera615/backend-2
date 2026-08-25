@@ -4,10 +4,8 @@ import {
     Strategy as JwtStrategy,
     ExtractJwt
 } from "passport-jwt"
-
 import env from "./env.js"
 import sessionsService from "../services/sessions.service.js"
-
 
 const cookieExtractor = (req) => {
 
@@ -152,6 +150,5 @@ const initializePassport = () => {
     )
 
 }
-
 
 export default initializePassport
